@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+
+# Data (downloaded / generated locally — see README)
+data/raw/
+data/processed/
+
+# Trained models (published via GitHub Releases)
+models/*.h5
+models/*.keras
+models/*.pt
+models/*.joblib
+
+# Intermediate outputs
+results/legacy/features.csv
+
+# Misc
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
