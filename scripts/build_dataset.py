@@ -44,3 +44,8 @@ def main():
         a = r["anchor_translated"]
         rows.append(pair(a, r["positive_translated"], "binary", 1, "nli_triplet"))
         rows.append(pair(a, r["negative_translated"], "binary", 0, "nli_triplet"))
+
+    print("stsb_tr ...")
+    sts = load_dataset("figenfikri/stsb_tr", split="train")
+    for r in sts:
+        rows.append(pair(r["sentence1"], r["sentence2"], "score", float(r["score"]), "stsb_tr"))
