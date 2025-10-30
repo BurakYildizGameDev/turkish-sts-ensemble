@@ -49,3 +49,24 @@ def main():
     sts = load_dataset("figenfikri/stsb_tr", split="train")
     for r in sts:
         rows.append(pair(r["sentence1"], r["sentence2"], "score", float(r["score"]), "stsb_tr"))
+
+    df = pd.DataFrame(rows)
+
+    scored = df.drop(columns="original_score")
+    scored.to_csv(os.path.join(OUT_DIR, "semantic_dataset.csv"), index=False, encoding="utf-8-sig")
+
+    binary = df.copy()
+    is_sts = binary["source"] == "stsb_tr"
+    binary.loc[is_sts, "original_score"] = binary.loc[is_sts, "label_value"]
+    binary.loc[is_sts, "label_value"] = (binary.loc[is_sts, "label_value"] >= STS_THRESHOLD).astype(int)
+    binary["label_type"] = "binary"
+    binary["label_value"] = binary["label_value"].astype(int)
+    binary.to_csv(os.path.join(OUT_DIR, "semantic_dataset_binary.csv"), index=False, encoding="utf-8-sig")
+
+    print(f"\n{len(binary):,} pairs")
+    print(binary["source"].value_counts().to_string())
+    print(binary["label_value"].value_counts().to_string())
+
+
+if __name__ == "__main__":
+    main()
