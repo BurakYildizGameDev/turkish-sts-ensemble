@@ -27,3 +27,13 @@ def pair(a, b, label_type, label_value, source, score=None):
     return {"id": str(uuid.uuid4()), "text_a": a, "text_b": b,
             "label_type": label_type, "label_value": label_value,
             "source": source, "original_score": score}
+
+
+def main():
+    os.makedirs(OUT_DIR, exist_ok=True)
+    rows = []
+
+    print("ml-paraphrase-tr ...")
+    ml = load_dataset("dogukanvzr/ml-paraphrase-tr", split="train")
+    for r in ml:
+        rows.append(pair(r["sentence1"], r["sentence2"], "binary", int(r["label"]), "ml_paraphrase"))
