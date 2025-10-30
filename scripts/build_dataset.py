@@ -37,3 +37,10 @@ def main():
     ml = load_dataset("dogukanvzr/ml-paraphrase-tr", split="train")
     for r in ml:
         rows.append(pair(r["sentence1"], r["sentence2"], "binary", int(r["label"]), "ml_paraphrase"))
+
+    print("all-nli-triplets-turkish ...")
+    nli = load_dataset("mertcobanov/all-nli-triplets-turkish", split="train")
+    for r in nli:
+        a = r["anchor_translated"]
+        rows.append(pair(a, r["positive_translated"], "binary", 1, "nli_triplet"))
+        rows.append(pair(a, r["negative_translated"], "binary", 0, "nli_triplet"))
