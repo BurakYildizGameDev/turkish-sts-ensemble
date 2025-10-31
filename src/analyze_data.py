@@ -48,3 +48,18 @@ def analyze_dataset(csv_path="data/processed/semantic_dataset.csv"):
     plt.savefig(f"{OUTPUT_DIR}/Class_balance.png", dpi=300)
     print(f"✅ Class balance saved: {OUTPUT_DIR}/Class_balance.png")
     plt.close()
+
+    # 2. Cümle Uzunluk Analizi (Histogram)
+    df['len_a'] = df['text_a'].astype(str).apply(lambda x: len(x.split()))
+    df['len_b'] = df['text_b'].astype(str).apply(lambda x: len(x.split()))
+    
+    plt.figure(figsize=(12, 6))
+    sns.histplot(df['len_a'], color="skyblue", label="Sentence A", kde=True, alpha=0.5)
+    sns.histplot(df['len_b'], color="orange", label="Sentence B", kde=True, alpha=0.5)
+    plt.title("Sentence Length Distribution (Word Count)")
+    plt.xlabel("Word Count")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.savefig(f"{OUTPUT_DIR}/sentence_lengths.png", dpi=300)
+    print(f"✅ Length analysis saved: {OUTPUT_DIR}/sentence_lengths.png")
+    plt.close()
