@@ -76,3 +76,19 @@ def analyze_dataset(csv_path="data/processed/semantic_dataset.csv"):
     plt.savefig(f"{OUTPUT_DIR}/wordcloud.png", dpi=300)
     print(f"✅ Word cloud saved: {OUTPUT_DIR}/wordcloud.png")
     plt.close()
+
+    # 4. Etiket Bazlı Uzunluk Farkı Analizi (Boxplot)
+    df['len_diff'] = abs(df['len_a'] - df['len_b'])
+    
+    plt.figure(figsize=(10, 6))
+    sns.boxplot(x='label_value', y='len_diff', data=df, palette="Set2")
+    plt.xticks([0, 1], ['Not Similar (0)', 'Similar (1)'])
+    plt.title("Sentence Length Differences by Label")
+    plt.xlabel("Class")
+    plt.ylabel("Word Count Difference (Absolute)")
+    plt.savefig(f"{OUTPUT_DIR}/length_diff_boxplot.png", dpi=300)
+    print(f"✅ Length difference analysis saved: {OUTPUT_DIR}/length_diff_boxplot.png")
+    plt.close()
+
+if __name__ == "__main__":
+    analyze_dataset()
