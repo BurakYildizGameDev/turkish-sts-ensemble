@@ -63,3 +63,16 @@ def analyze_dataset(csv_path="data/processed/semantic_dataset.csv"):
     plt.savefig(f"{OUTPUT_DIR}/sentence_lengths.png", dpi=300)
     print(f"✅ Length analysis saved: {OUTPUT_DIR}/sentence_lengths.png")
     plt.close()
+
+    # 3. Kelime Bulutu (Word Cloud)
+    text_corpus = " ".join(df['text_a'].astype(str).tolist() + df['text_b'].astype(str).tolist())
+    
+    wordcloud = WordCloud(width=1600, height=800, background_color='white', colormap='viridis').generate(text_corpus)
+    
+    plt.figure(figsize=(15, 7.5))
+    plt.imshow(wordcloud, interpolation='bilinear')
+    plt.axis('off')
+    plt.title("Most Frequent Words in Dataset", fontsize=20)
+    plt.savefig(f"{OUTPUT_DIR}/wordcloud.png", dpi=300)
+    print(f"✅ Word cloud saved: {OUTPUT_DIR}/wordcloud.png")
+    plt.close()
