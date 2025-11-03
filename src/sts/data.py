@@ -18,3 +18,12 @@ DATA_PATH = "data/processed/semantic_dataset_binary.csv"
 
 def normalize(text):
     return " ".join(str(text).lower().split())
+
+
+def load_pairs(path=DATA_PATH):
+    df = pd.read_csv(path, usecols=["text_a", "text_b", "label_value", "source"])
+    df = df.dropna(subset=["text_a", "text_b", "label_value"])
+    df["text_a"] = df["text_a"].astype(str)
+    df["text_b"] = df["text_b"].astype(str)
+    df["label"] = df["label_value"].astype(int)
+    return df.drop(columns="label_value").reset_index(drop=True)
