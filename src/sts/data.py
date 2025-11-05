@@ -47,3 +47,29 @@ def deduplicate(df):
 def anchor_groups(df):
     """Integer group id per row: pairs sharing the same normalised anchor sentence share a group."""
     return pd.factorize(df["text_a"].map(normalize))[0]
+
+
+def make_split(df, protocol="grouped", sample_size=62_000, test_size=0.2, seed=42):
+    """
+    Return (train_df, test_df), each with a `group` column.
+
+    sample_size is taken after deduplication for the grouped protocol and from the
+    raw rows for the random protocol, so both runs train on the same number of pairs.
+    """
+    if protocol == "grouped":
+        df = deduplicate(df)
+    elif protocol != "random":
+        raise ValueError(f"unknown split protocol: {protocol}")
+
+    if sample_size and sample_size < len(df):
+        df = df.sample(n=sample_size, random_state=seed).reset_index(drop=True)
+    df = df.assign(group=anchor_groups(df))
+
+    if protocol == "grouped":
+        splitter = GroupShuffleSplit(n_splits=1, test_size=test_size, random_state=seed)
+        tr_idx, te_idx = next(splitter.split(df, groups=df["group"]))
+    else:
+        tr_idx, te_idx = train_test_split(
+            np.arange(len(df)), test_size=test_size, random_state=seed, stratify=df["label"]
+        )
+    return df.iloc[tr_idx].reset_index(drop=True), df.iloc[te_idx].reset_index(drop=True)
