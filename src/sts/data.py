@@ -42,3 +42,8 @@ def deduplicate(df):
     n_labels = df.groupby("pair_key")["label"].transform("nunique")
     df = df[n_labels == 1]
     return df.drop_duplicates("pair_key").drop(columns="pair_key").reset_index(drop=True)
+
+
+def anchor_groups(df):
+    """Integer group id per row: pairs sharing the same normalised anchor sentence share a group."""
+    return pd.factorize(df["text_a"].map(normalize))[0]
