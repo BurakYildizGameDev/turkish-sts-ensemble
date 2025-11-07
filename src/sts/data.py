@@ -73,3 +73,8 @@ def make_split(df, protocol="grouped", sample_size=62_000, test_size=0.2, seed=4
             np.arange(len(df)), test_size=test_size, random_state=seed, stratify=df["label"]
         )
     return df.iloc[tr_idx].reset_index(drop=True), df.iloc[te_idx].reset_index(drop=True)
+
+
+def group_folds(train_df, n_folds=5):
+    """Fold indices over the training set that never split an anchor group."""
+    return list(GroupKFold(n_splits=n_folds).split(train_df, groups=train_df["group"]))
