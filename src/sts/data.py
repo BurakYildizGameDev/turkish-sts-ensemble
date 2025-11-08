@@ -78,3 +78,18 @@ def make_split(df, protocol="grouped", sample_size=62_000, test_size=0.2, seed=4
 def group_folds(train_df, n_folds=5):
     """Fold indices over the training set that never split an anchor group."""
     return list(GroupKFold(n_splits=n_folds).split(train_df, groups=train_df["group"]))
+
+
+def leakage_report(train_df, test_df):
+    """How much of the test set was already seen during training."""
+    train_pairs = {pair_key(a, b) for a, b in zip(train_df["text_a"], train_df["text_b"])}
+    train_sents = set(train_df["text_a"].map(normalize)) | set(train_df["text_b"].map(normalize))
+    test_a = test_df["text_a"].map(normalize)
+    test_b = test_df["text_b"].map(normalize)
+    return {
+        "test_pairs": len(test_df),
+        "pair_seen_in_train": float(np.mean([pair_key(a, b) in train_pairs
+                                             for a, b in zip(test_df["text_a"], test_df["text_b"])])),
+        "anchor_seen_in_train": float(test_a.isin(train_sents).mean()),
+        "any_sentence_seen_in_train": float((test_a.isin(train_sents) | test_b.isin(train_sents)).mean()),
+    }
