@@ -20,3 +20,13 @@ def test_deduplicate_removes_duplicates_and_conflicts():
     out = data.deduplicate(toy_pairs())
     assert len(out) == 80
     assert not (out["text_a"] == "conflict a").any()
+
+
+def test_grouped_split_has_no_anchor_overlap():
+    train, test = data.make_split(toy_pairs(), "grouped", sample_size=None, test_size=0.25)
+    anchors_tr = set(train["text_a"].map(data.normalize))
+    anchors_te = set(test["text_a"].map(data.normalize))
+    assert anchors_tr.isdisjoint(anchors_te)
+    report = data.leakage_report(train, test)
+    assert report["pair_seen_in_train"] == 0
+    assert report["anchor_seen_in_train"] == 0
