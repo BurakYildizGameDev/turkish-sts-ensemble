@@ -30,3 +30,10 @@ def test_grouped_split_has_no_anchor_overlap():
     report = data.leakage_report(train, test)
     assert report["pair_seen_in_train"] == 0
     assert report["anchor_seen_in_train"] == 0
+
+
+def test_random_split_leaks():
+    # the legacy protocol keeps duplicates, so the same anchor lands on both sides
+    df = pd.concat([toy_pairs()] * 3, ignore_index=True)
+    train, test = data.make_split(df, "random", sample_size=None, test_size=0.3)
+    assert data.leakage_report(train, test)["pair_seen_in_train"] > 0.5
