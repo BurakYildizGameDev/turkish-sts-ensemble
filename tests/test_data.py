@@ -37,3 +37,14 @@ def test_random_split_leaks():
     df = pd.concat([toy_pairs()] * 3, ignore_index=True)
     train, test = data.make_split(df, "random", sample_size=None, test_size=0.3)
     assert data.leakage_report(train, test)["pair_seen_in_train"] > 0.5
+
+
+def test_group_folds_keep_groups_together():
+    train, _ = data.make_split(toy_pairs(), "grouped", sample_size=None)
+    for fit_idx, val_idx in data.group_folds(train, n_folds=4):
+        assert set(train["group"].iloc[fit_idx]).isdisjoint(train["group"].iloc[val_idx])
+
+
+def test_unknown_protocol():
+    with pytest.raises(ValueError):
+        data.make_split(toy_pairs(), "stratified")
