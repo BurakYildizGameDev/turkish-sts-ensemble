@@ -39,3 +39,7 @@ def jaccard(a, b):
 
 def token_overlap(a, b):
     return len(_tokens(a) & _tokens(b))
+
+
+def levenshtein(a, b):
+    return _levenshtein(str(a), str(b))
