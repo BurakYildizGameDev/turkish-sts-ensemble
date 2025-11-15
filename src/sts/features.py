@@ -51,3 +51,13 @@ def lexical_features(texts_a, texts_b):
         "token_overlap": np.array([token_overlap(a, b) for a, b in zip(texts_a, texts_b)]),
         "levenshtein_dist": np.array([levenshtein(a, b) for a, b in zip(texts_a, texts_b)]),
     }
+
+
+def fit_tfidf(texts, max_features=5000):
+    return TfidfVectorizer(max_features=max_features).fit(texts)
+
+
+def tfidf_similarity(tfidf, texts_a, texts_b):
+    # rows are L2-normalised, so the row-wise dot product is the cosine similarity
+    va, vb = tfidf.transform(texts_a), tfidf.transform(texts_b)
+    return np.asarray(va.multiply(vb).sum(axis=1)).ravel()
