@@ -25,3 +25,17 @@ except ImportError:  # pure-Python fallback
                 cur.append(min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (ca != cb)))
             prev = cur
         return prev[-1]
+
+
+def _tokens(text):
+    return set(str(text).lower().split())
+
+
+def jaccard(a, b):
+    sa, sb = _tokens(a), _tokens(b)
+    union = sa | sb
+    return len(sa & sb) / len(union) if union else 0.0
+
+
+def token_overlap(a, b):
+    return len(_tokens(a) & _tokens(b))
