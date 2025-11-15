@@ -43,3 +43,11 @@ def token_overlap(a, b):
 
 def levenshtein(a, b):
     return _levenshtein(str(a), str(b))
+
+
+def lexical_features(texts_a, texts_b):
+    return {
+        "jaccard_sim": np.array([jaccard(a, b) for a, b in zip(texts_a, texts_b)]),
+        "token_overlap": np.array([token_overlap(a, b) for a, b in zip(texts_a, texts_b)]),
+        "levenshtein_dist": np.array([levenshtein(a, b) for a, b in zip(texts_a, texts_b)]),
+    }
