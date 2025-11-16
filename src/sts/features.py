@@ -61,3 +61,16 @@ def tfidf_similarity(tfidf, texts_a, texts_b):
     # rows are L2-normalised, so the row-wise dot product is the cosine similarity
     va, vb = tfidf.transform(texts_a), tfidf.transform(texts_b)
     return np.asarray(va.multiply(vb).sum(axis=1)).ravel()
+
+
+def load_minilm(device=None):
+    from sentence_transformers import SentenceTransformer
+    return SentenceTransformer(MINILM_NAME, device=device)
+
+
+def embedding_similarity(model, texts_a, texts_b, batch_size=256, prefix_a="", prefix_b=""):
+    ea = model.encode([prefix_a + t for t in texts_a], batch_size=batch_size,
+                      normalize_embeddings=True, show_progress_bar=False)
+    eb = model.encode([prefix_b + t for t in texts_b], batch_size=batch_size,
+                      normalize_embeddings=True, show_progress_bar=False)
+    return np.sum(ea * eb, axis=1)
