@@ -74,3 +74,11 @@ def embedding_similarity(model, texts_a, texts_b, batch_size=256, prefix_a="", p
     eb = model.encode([prefix_b + t for t in texts_b], batch_size=batch_size,
                       normalize_embeddings=True, show_progress_bar=False)
     return np.sum(ea * eb, axis=1)
+
+
+def best_threshold(y_true, scores):
+    """Threshold that maximises F1. Always pick it on training data, never on the test set."""
+    from sklearn.metrics import f1_score
+    candidates = np.unique(np.quantile(scores, np.linspace(0.01, 0.99, 197)))
+    f1s = [f1_score(y_true, scores >= t) for t in candidates]
+    return float(candidates[int(np.argmax(f1s))])
