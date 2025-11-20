@@ -11,3 +11,8 @@ def test_jaccard():
 
 def test_token_overlap_is_case_insensitive():
     assert features.token_overlap("Kedi uyuyor", "kedi koşuyor") == 1
+
+
+def test_levenshtein():
+    assert features.levenshtein("kitap", "kitap") == 0
+    assert features.levenshtein("kitap", "kilit") == 3
