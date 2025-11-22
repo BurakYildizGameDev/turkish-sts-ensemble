@@ -60,3 +60,20 @@ class SiameseLSTM(nn.Module):
                                       nn.Dropout(0.2), nn.Linear(64, 1))
         else:
             self.head = nn.Sequential(nn.Dropout(dropout), nn.Linear(2 * dim, 1))
+
+    def encode(self, x):
+        mask = x != PAD
+        lengths = mask.sum(1).clamp(min=1).cpu()
+        packed = nn.utils.rnn.pack_padded_sequence(self.embed(x), lengths, batch_first=True,
+                                                   enforce_sorted=False)
+        out, (h, _) = self.rnn(packed)
+        if self.kind != "advanced":
+            return h[-1]
+        out, _ = nn.utils.rnn.pad_packed_sequence(out, batch_first=True, total_length=x.size(1))
+        scores = self.attn(torch.tanh(out)).squeeze(-1).masked_fill(~mask, -1e9)
+        return (out * F.softmax(scores, dim=1).unsqueeze(-1)).sum(1)
+
+    def forward(self, a, b):
+        u, v = self.encode(a), self.encode(b)
+        z = torch.cat([u, v, (u - v).abs(), u * v], 1) if self.kind == "advanced" else torch.cat([u, v], 1)
+        return self.head(z).squeeze(-1)
