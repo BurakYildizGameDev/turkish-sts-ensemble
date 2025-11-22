@@ -44,3 +44,19 @@ class Vocab:
 
     def __len__(self):
         return len(self.itos)
+
+
+class SiameseLSTM(nn.Module):
+    def __init__(self, vocab_size, kind="advanced", embed_dim=128, hidden=64, dropout=0.3):
+        super().__init__()
+        self.kind = kind
+        self.embed = nn.Embedding(vocab_size, embed_dim, padding_idx=PAD)
+        bidir = kind == "advanced"
+        self.rnn = nn.LSTM(embed_dim, hidden, batch_first=True, bidirectional=bidir)
+        dim = hidden * (2 if bidir else 1)
+        if bidir:
+            self.attn = nn.Linear(dim, 1)
+            self.head = nn.Sequential(nn.Dropout(dropout), nn.Linear(4 * dim, 64), nn.ReLU(),
+                                      nn.Dropout(0.2), nn.Linear(64, 1))
+        else:
+            self.head = nn.Sequential(nn.Dropout(dropout), nn.Linear(2 * dim, 1))
