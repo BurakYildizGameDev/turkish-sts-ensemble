@@ -77,3 +77,19 @@ class SiameseLSTM(nn.Module):
         u, v = self.encode(a), self.encode(b)
         z = torch.cat([u, v, (u - v).abs(), u * v], 1) if self.kind == "advanced" else torch.cat([u, v], 1)
         return self.head(z).squeeze(-1)
+
+
+def _batches(n, batch_size, shuffle, rng=None):
+    idx = rng.permutation(n) if shuffle else np.arange(n)
+    for s in range(0, n, batch_size):
+        yield idx[s:s + batch_size]
+
+
+def predict(model, xa, xb, device, batch_size=2048):
+    model.eval()
+    out = []
+    with torch.no_grad():
+        for b in _batches(len(xa), batch_size, shuffle=False):
+            logits = model(torch.from_numpy(xa[b]).to(device), torch.from_numpy(xb[b]).to(device))
+            out.append(torch.sigmoid(logits).cpu().numpy())
+    return np.concatenate(out)
