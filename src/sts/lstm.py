@@ -93,3 +93,35 @@ def predict(model, xa, xb, device, batch_size=2048):
             logits = model(torch.from_numpy(xa[b]).to(device), torch.from_numpy(xb[b]).to(device))
             out.append(torch.sigmoid(logits).cpu().numpy())
     return np.concatenate(out)
+
+
+def train_lstm(texts_a, texts_b, y, kind="advanced", val_frac=0.1, groups=None, epochs=7,
+               batch_size=512, lr=1e-3, patience=2, max_len=32, vocab_size=30000, seed=42,
+               device=None, verbose=True):
+    """
+    Train a Siamese LSTM with early stopping on a held-out slice of the given data.
+    If `groups` is given, the validation slice is grouped the same way as the test split.
+    Returns (checkpoint dict, history dict).
+    """
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    torch.manual_seed(seed)
+    rng = np.random.default_rng(seed)
+    texts_a, texts_b, y = list(texts_a), list(texts_b), np.asarray(y, dtype=np.float32)
+
+    n = len(y)
+    if groups is not None:
+        uniq = rng.permutation(np.unique(groups))
+        val_groups = set(uniq[:max(1, int(len(uniq) * val_frac))])
+        is_val = np.array([g in val_groups for g in groups])
+    else:
+        is_val = np.zeros(n, dtype=bool)
+        is_val[rng.permutation(n)[:int(n * val_frac)]] = True
+    tr, va = np.where(~is_val)[0], np.where(is_val)[0]
+
+    vocab = Vocab.build([texts_a[i] for i in tr] + [texts_b[i] for i in tr], vocab_size)
+    xa, xb = vocab.encode(texts_a, max_len), vocab.encode(texts_b, max_len)
+
+    config = {"kind": kind, "vocab_size": len(vocab)}
+    model = SiameseLSTM(**config).to(device)
+    opt = torch.optim.Adam(model.parameters(), lr=lr)
+    sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, factor=0.5, patience=1)
