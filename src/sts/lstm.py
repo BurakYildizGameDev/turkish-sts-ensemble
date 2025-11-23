@@ -157,3 +157,20 @@ def train_lstm(texts_a, texts_b, y, kind="advanced", val_frac=0.1, groups=None, 
 
     ckpt = {"state_dict": best, "config": config, "vocab": vocab.itos, "max_len": max_len}
     return ckpt, history
+
+
+def load(ckpt, device=None):
+    """Rebuild (model, vocab, max_len) from a checkpoint dict or a path saved with torch.save."""
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    if not isinstance(ckpt, dict):
+        ckpt = torch.load(ckpt, map_location=device, weights_only=False)
+    model = SiameseLSTM(**ckpt["config"]).to(device)
+    model.load_state_dict(ckpt["state_dict"])
+    model.eval()
+    return model, Vocab(ckpt["vocab"]), ckpt["max_len"]
+
+
+def predict_texts(ckpt, texts_a, texts_b, device=None):
+    device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+    model, vocab, max_len = load(ckpt, device)
+    return predict(model, vocab.encode(list(texts_a), max_len), vocab.encode(list(texts_b), max_len), device)
