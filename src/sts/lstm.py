@@ -125,3 +125,35 @@ def train_lstm(texts_a, texts_b, y, kind="advanced", val_frac=0.1, groups=None, 
     model = SiameseLSTM(**config).to(device)
     opt = torch.optim.Adam(model.parameters(), lr=lr)
     sched = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, factor=0.5, patience=1)
+
+    history = {"loss": [], "val_loss": [], "val_acc": []}
+    best, best_loss, bad = None, float("inf"), 0
+    for epoch in range(epochs):
+        model.train()
+        total = 0.0
+        for b in _batches(len(tr), batch_size, shuffle=True, rng=rng):
+            i = tr[b]
+            logits = model(torch.from_numpy(xa[i]).to(device), torch.from_numpy(xb[i]).to(device))
+            loss = F.binary_cross_entropy_with_logits(logits, torch.from_numpy(y[i]).to(device))
+            opt.zero_grad()
+            loss.backward()
+            opt.step()
+            total += loss.item() * len(i)
+        p = np.clip(predict(model, xa[va], xb[va], device), 1e-7, 1 - 1e-7)
+        val_loss = float(-np.mean(y[va] * np.log(p) + (1 - y[va]) * np.log(1 - p)))
+        history["loss"].append(total / len(tr))
+        history["val_loss"].append(val_loss)
+        history["val_acc"].append(float(np.mean((p > 0.5) == y[va])))
+        sched.step(val_loss)
+        if verbose:
+            print(f"    epoch {epoch + 1}: loss={history['loss'][-1]:.4f} "
+                  f"val_loss={val_loss:.4f} val_acc={history['val_acc'][-1]:.4f}")
+        if val_loss < best_loss:
+            best, best_loss, bad = copy.deepcopy(model.state_dict()), val_loss, 0
+        else:
+            bad += 1
+            if bad >= patience:
+                break
+
+    ckpt = {"state_dict": best, "config": config, "vocab": vocab.itos, "max_len": max_len}
+    return ckpt, history
