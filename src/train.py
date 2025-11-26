@@ -61,3 +61,17 @@ def metrics(name, kind, y, scores, threshold):
 
 def section(title):
     print(f"\n{'=' * 60}\n{title}\n{'=' * 60}")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--protocol", choices=["clean", "legacy"], default="clean")
+    ap.add_argument("--out", default="results")
+    ap.add_argument("--sample-size", type=int, default=62_000)
+    ap.add_argument("--folds", type=int, default=5)
+    ap.add_argument("--skip-extra-baselines", action="store_true", help="skip LaBSE and E5-large")
+    args = ap.parse_args()
+    legacy = args.protocol == "legacy"
+    os.makedirs(args.out, exist_ok=True)
+    start = time.time()
+    print(f"protocol={args.protocol}  device={DEVICE}  out={args.out}")
