@@ -75,3 +75,16 @@ def main():
     os.makedirs(args.out, exist_ok=True)
     start = time.time()
     print(f"protocol={args.protocol}  device={DEVICE}  out={args.out}")
+
+    # ------------------------------------------------------------------ 1. data
+    section("1/5  Data")
+    pairs = data.load_pairs()
+    train, test = data.make_split(pairs, "random" if legacy else "grouped",
+                                  sample_size=args.sample_size, seed=SEED)
+    leak = data.leakage_report(train, test)
+    leak.update(protocol=args.protocol, train_pairs=len(train),
+                train_positive_rate=float(train["label"].mean()), test_positive_rate=float(test["label"].mean()))
+    print(json.dumps(leak, indent=2))
+    with open(f"{args.out}/split_info.json", "w") as f:
+        json.dump(leak, f, indent=2)
+    y_tr, y_te = train["label"].values, test["label"].values
