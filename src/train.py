@@ -88,3 +88,18 @@ def main():
     with open(f"{args.out}/split_info.json", "w") as f:
         json.dump(leak, f, indent=2)
     y_tr, y_te = train["label"].values, test["label"].values
+
+    # ------------------------------------------------------------------ 2. LSTMs
+    section("2/5  Siamese LSTMs")
+    rows, histories, ckpts = [], {}, {}
+    for kind, name, epochs in [("baseline", "LSTM baseline", 5), ("advanced", "Bi-LSTM + attention", 7)]:
+        print(f"  {name}")
+        ckpt, hist = lstm.train_lstm(train["text_a"], train["text_b"], y_tr, kind=kind, epochs=epochs,
+                                     groups=None if legacy else train["group"].values,
+                                     seed=SEED, device=DEVICE)
+        prob = lstm.predict_texts(ckpt, test["text_a"], test["text_b"], DEVICE)
+        rows.append(metrics(name, "Deep learning", y_te, prob, 0.5))
+        print(f"    test F1 = {rows[-1]['F1']:.4f}")
+        histories[kind], ckpts[kind] = hist, ckpt
+    with open(f"{args.out}/lstm_history.json", "w") as f:
+        json.dump(histories, f, indent=2)
