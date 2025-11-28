@@ -103,3 +103,43 @@ def main():
         histories[kind], ckpts[kind] = hist, ckpt
     with open(f"{args.out}/lstm_history.json", "w") as f:
         json.dump(histories, f, indent=2)
+
+    # ------------------------------------------------------------------ 3. features
+    section("3/5  Features")
+    lstm_te = lstm.predict_texts(ckpts["advanced"], test["text_a"], test["text_b"], DEVICE)
+    if legacy:
+        lstm_tr = lstm.predict_texts(ckpts["advanced"], train["text_a"], train["text_b"], DEVICE)
+    else:
+        lstm_tr = np.zeros(len(train))
+        for k, (fit_idx, oof_idx) in enumerate(data.group_folds(train, args.folds), 1):
+            print(f"  out-of-fold lstm_prob, fold {k}/{args.folds}")
+            part = train.iloc[fit_idx]
+            ckpt, _ = lstm.train_lstm(part["text_a"], part["text_b"], part["label"].values, kind="advanced",
+                                      groups=part["group"].values, seed=SEED + k, device=DEVICE, verbose=False)
+            lstm_tr[oof_idx] = lstm.predict_texts(ckpt, train["text_a"].iloc[oof_idx],
+                                                  train["text_b"].iloc[oof_idx], DEVICE)
+
+    print("  MiniLM similarities")
+    minilm = features.load_minilm(DEVICE)
+    sim_tr = features.embedding_similarity(minilm, train["text_a"].tolist(), train["text_b"].tolist())
+    sim_te = features.embedding_similarity(minilm, test["text_a"].tolist(), test["text_b"].tolist())
+    del minilm
+
+    print("  TF-IDF and lexical features")
+    tfidf_text = train["text_a"].tolist() + train["text_b"].tolist()
+    if legacy:
+        tfidf_text += test["text_a"].tolist() + test["text_b"].tolist()
+    tfidf = features.fit_tfidf(tfidf_text)
+
+    def frame(df, sim, prob):
+        cols = {"minilm_sim": sim, "lstm_prob": prob,
+                "tfidf_sim": features.tfidf_similarity(tfidf, df["text_a"], df["text_b"])}
+        cols.update(features.lexical_features(df["text_a"], df["text_b"]))
+        return pd.DataFrame(cols)[features.FEATURES]
+
+    X_tr, X_te = frame(train, sim_tr, lstm_tr), frame(test, sim_te, lstm_te)
+    feat = pd.concat([
+        X_tr.assign(label=y_tr, group=train["group"].values, source=train["source"].values, split="train"),
+        X_te.assign(label=y_te, group=test["group"].values, source=test["source"].values, split="test"),
+    ], ignore_index=True)
+    feat.to_csv(f"{args.out}/features.csv", index=False)
