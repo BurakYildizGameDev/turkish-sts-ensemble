@@ -143,3 +143,26 @@ def main():
         X_te.assign(label=y_te, group=test["group"].values, source=test["source"].values, split="test"),
     ], ignore_index=True)
     feat.to_csv(f"{args.out}/features.csv", index=False)
+
+    # ------------------------------------------------------------------ 4. zero-shot baselines
+    section("4/5  Zero-shot baselines")
+    t = features.best_threshold(y_tr, X_tr["minilm_sim"].values)
+    rows.append(metrics("MiniLM-L12 (zero-shot)", "Pre-trained", y_te, X_te["minilm_sim"].values, t))
+    avg = lambda X: X[["minilm_sim", "tfidf_sim", "jaccard_sim"]].mean(axis=1).values
+    t = features.best_threshold(y_tr, avg(X_tr))
+    rows.append(metrics("Score average (MiniLM, TF-IDF, Jaccard)", "Simple ensemble", y_te, avg(X_te), t))
+
+    if not args.skip_extra_baselines:
+        from sentence_transformers import SentenceTransformer
+        calib = train.sample(n=min(5000, len(train)), random_state=SEED)
+        for name, model_id, prefix in [("LaBSE (zero-shot)", "sentence-transformers/LaBSE", ""),
+                                       ("E5-large (zero-shot)", "intfloat/multilingual-e5-large", "query: ")]:
+            print(f"  {name}")
+            model = SentenceTransformer(model_id, device=DEVICE)
+            enc = lambda df: features.embedding_similarity(model, df["text_a"].tolist(), df["text_b"].tolist(),
+                                                           batch_size=128, prefix_a=prefix, prefix_b=prefix)
+            t = features.best_threshold(calib["label"].values, enc(calib))
+            rows.append(metrics(name, "Pre-trained", y_te, enc(test), t))
+            del model
+            if DEVICE == "cuda":
+                torch.cuda.empty_cache()
