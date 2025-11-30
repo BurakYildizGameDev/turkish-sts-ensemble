@@ -166,3 +166,39 @@ def main():
             del model
             if DEVICE == "cuda":
                 torch.cuda.empty_cache()
+
+    # ------------------------------------------------------------------ 5. meta-models
+    section("5/5  Meta-models")
+    importances, fitted, cv_f1 = {}, {}, {}
+    folds = data.group_folds(train, args.folds)
+    for name, model in meta_models().items():
+        cv_f1[name] = float(cross_val_score(model, X_tr.values, y_tr, cv=folds, scoring="f1").mean())
+        model.fit(X_tr.values, y_tr)
+        prob = model.predict_proba(X_te.values)[:, 1]
+        rows.append(metrics(name, "Ensemble", y_te, prob, 0.5))
+        importances[name] = model.feature_importances_ / model.feature_importances_.sum()
+        fitted[name] = model
+        print(f"  {name:<14} train-CV F1 = {cv_f1[name]:.4f}   test F1 = {rows[-1]['F1']:.4f}")
+
+    table = pd.DataFrame(rows).sort_values("F1", ascending=False)
+    table.to_csv(f"{args.out}/model_comparison.csv", index=False)
+    pd.DataFrame(importances, index=features.FEATURES).to_csv(f"{args.out}/feature_importance.csv")
+
+    if not legacy:
+        # The demo model is chosen by cross-validation on the training set, not by test score.
+        best = max(cv_f1, key=cv_f1.get)
+        os.makedirs("models", exist_ok=True)
+        torch.save(ckpts["baseline"], "models/lstm_baseline.pt")
+        torch.save(ckpts["advanced"], "models/lstm_advanced.pt")
+        joblib.dump({"name": best, "model": fitted[best], "tfidf": tfidf, "features": features.FEATURES,
+                     "minilm": features.MINILM_NAME, "lstm": "models/lstm_advanced.pt"},
+                    "models/ensemble.joblib", compress=3)
+        print(f"\n  saved models/ensemble.joblib ({best}), models/lstm_*.pt")
+
+    section("Results (test set)")
+    print(table[["Model", "Accuracy", "Precision", "Recall", "F1", "AUC"]].to_string(index=False, float_format="%.4f"))
+    print(f"\ndone in {(time.time() - start) / 60:.1f} min")
+
+
+if __name__ == "__main__":
+    main()
