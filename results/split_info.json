@@ -1,0 +1,10 @@
+{
+  "test_pairs": 12383,
+  "pair_seen_in_train": 0.0,
+  "anchor_seen_in_train": 0.060728417992408947,
+  "any_sentence_seen_in_train": 0.20035532584995558,
+  "protocol": "clean",
+  "train_pairs": 49617,
+  "train_positive_rate": 0.5500131003486708,
+  "test_positive_rate": 0.5458289590567714
+}
