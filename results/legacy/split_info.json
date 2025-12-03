@@ -1,0 +1,10 @@
+{
+  "test_pairs": 12400,
+  "pair_seen_in_train": 0.23241935483870968,
+  "anchor_seen_in_train": 0.6308064516129033,
+  "any_sentence_seen_in_train": 0.6795967741935484,
+  "protocol": "legacy",
+  "train_pairs": 49600,
+  "train_positive_rate": 0.5220564516129033,
+  "test_positive_rate": 0.5220967741935484
+}
