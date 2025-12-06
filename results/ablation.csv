@@ -1,0 +1,11 @@
+Configuration,Features,N,Test_F1,CV_F1_mean,CV_F1_std,Delta_vs_all
+All features,"minilm_sim, lstm_prob, tfidf_sim, jaccard_sim, token_overlap, levenshtein_dist",6,0.8791624254762251,0.8731110249473426,0.005314298641991882,0.0
+without minilm_sim,"lstm_prob, tfidf_sim, jaccard_sim, token_overlap, levenshtein_dist",5,0.8260646485377117,0.8195213889050909,0.008487916937455193,-0.053097776938513475
+without lstm_prob,"minilm_sim, tfidf_sim, jaccard_sim, token_overlap, levenshtein_dist",5,0.8457950736044308,0.8447138665481555,0.0034868058098565463,-0.03336735187179429
+without tfidf_sim,"minilm_sim, lstm_prob, jaccard_sim, token_overlap, levenshtein_dist",5,0.8786051580094443,0.8730766481672738,0.004384791054047073,-0.0005572674667808641
+without jaccard_sim,"minilm_sim, lstm_prob, tfidf_sim, token_overlap, levenshtein_dist",5,0.8773612321999419,0.8695512785299003,0.00654661988925052,-0.0018011932762832528
+without token_overlap,"minilm_sim, lstm_prob, tfidf_sim, jaccard_sim, levenshtein_dist",5,0.876523505513639,0.8693383769793217,0.0053871132829052615,-0.0026389199625861393
+without levenshtein_dist,"minilm_sim, lstm_prob, tfidf_sim, jaccard_sim, token_overlap",5,0.8734397677793905,0.8680260144228573,0.005967688490945149,-0.005722657696834665
+minilm_sim only,minilm_sim,1,0.8341205095176757,0.8302001905854233,0.002434464161795673,-0.04504191595854945
+minilm_sim + lstm_prob,"minilm_sim, lstm_prob",2,0.8667339000144072,0.8616929358683993,0.005039021361288957,-0.01242852546181794
+lexical only,"tfidf_sim, jaccard_sim, token_overlap, levenshtein_dist",4,0.7229224847158277,0.7250567289192922,0.007608726698721356,-0.1562399407603975
