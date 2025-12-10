@@ -31,3 +31,28 @@ def sample_pairs():
         return df["text_a"].tolist(), df["text_b"].tolist()
     return ([f"Bu {i}. örnek cümledir." for i in range(N_PAIRS)],
             [f"Bu da {i}. karşılaştırma cümlesi." for i in range(N_PAIRS)])
+
+
+def measure(name, load_fn, score_fn, texts_a, texts_b):
+    gc.collect()
+    if DEVICE == "cuda":
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+        base = torch.cuda.memory_allocated()
+    t0 = time.perf_counter()
+    obj = load_fn()
+    load_s = time.perf_counter() - t0
+
+    score_fn(obj, texts_a[:BATCH], texts_b[:BATCH])  # warm-up
+    if DEVICE == "cuda":
+        torch.cuda.synchronize()
+    t0 = time.perf_counter()
+    for s in range(0, len(texts_a), BATCH):
+        score_fn(obj, texts_a[s:s + BATCH], texts_b[s:s + BATCH])
+    if DEVICE == "cuda":
+        torch.cuda.synchronize()
+    ms = (time.perf_counter() - t0) / len(texts_a) * 1000
+    vram = (torch.cuda.max_memory_allocated() - base) / 1024 ** 3 if DEVICE == "cuda" else float("nan")
+    print(f"  {name:<22} load {load_s:6.2f} s   {ms:6.3f} ms/pair   peak VRAM {vram:.2f} GB")
+    del obj
+    return {"Model": name, "Load_s": load_s, "ms_per_pair": ms, "Peak_VRAM_GB": vram}
