@@ -56,3 +56,9 @@ def measure(name, load_fn, score_fn, texts_a, texts_b):
     print(f"  {name:<22} load {load_s:6.2f} s   {ms:6.3f} ms/pair   peak VRAM {vram:.2f} GB")
     del obj
     return {"Model": name, "Load_s": load_s, "ms_per_pair": ms, "Peak_VRAM_GB": vram}
+
+
+def encoder(model_id, prefix=""):
+    return (lambda: SentenceTransformer(model_id, device=DEVICE),
+            lambda m, a, b: features.embedding_similarity(m, a, b, batch_size=BATCH,
+                                                          prefix_a=prefix, prefix_b=prefix))
