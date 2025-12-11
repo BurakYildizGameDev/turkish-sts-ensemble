@@ -62,3 +62,25 @@ def encoder(model_id, prefix=""):
     return (lambda: SentenceTransformer(model_id, device=DEVICE),
             lambda m, a, b: features.embedding_similarity(m, a, b, batch_size=BATCH,
                                                           prefix_a=prefix, prefix_b=prefix))
+
+
+def main():
+    a, b = sample_pairs()
+    gpu = torch.cuda.get_device_name(0) if DEVICE == "cuda" else "CPU"
+    print(f"device: {gpu}, {N_PAIRS} pairs, batch {BATCH}\n")
+    rows = [
+        measure("MiniLM-L12", *encoder(features.MINILM_NAME), a, b),
+        measure("LaBSE", *encoder("sentence-transformers/LaBSE"), a, b),
+        measure("E5-large", *encoder("intfloat/multilingual-e5-large", "query: "), a, b),
+        measure("Bi-LSTM + attention", lambda: lstm.load("models/lstm_advanced.pt", DEVICE),
+                lambda m, x, y: lstm.predict(m[0], m[1].encode(x, m[2]), m[1].encode(y, m[2]), DEVICE), a, b),
+        measure("Full ensemble", lambda: Ensemble(device=DEVICE),
+                lambda m, x, y: m.predict_proba(x, y), a, b),
+    ]
+    out = pd.DataFrame(rows).assign(Device=gpu)
+    out.to_csv(OUT_CSV, index=False)
+    print(f"\nsaved {OUT_CSV}")
+
+
+if __name__ == "__main__":
+    main()
