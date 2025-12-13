@@ -63,3 +63,7 @@ with st.sidebar:
     for label, (a, b) in EXAMPLES.items():
         if st.button(label, use_container_width=True):
             st.session_state["a"], st.session_state["b"] = a, b
+
+col1, col2 = st.columns(2)
+text_a = col1.text_area("Birinci cümle", key="a", height=120)
+text_b = col2.text_area("İkinci cümle", key="b", height=120)
