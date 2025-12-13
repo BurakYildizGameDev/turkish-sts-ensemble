@@ -51,3 +51,15 @@ if not os.path.exists(MODEL_PATH):
 
 with st.spinner("Modeller yükleniyor..."):
     ens = load_ensemble()
+
+with st.sidebar:
+    st.header("⚙️ Ayarlar")
+    threshold = st.slider("Karar eşiği", 0.05, 0.95, 0.50, 0.05,
+                          help="Ensemble olasılığı bu değerin üzerindeyse çift 'paraphrase' sayılır.")
+    st.header("📊 Model")
+    st.markdown(f"**Meta-model:** {ens.name}  \n**Cihaz:** {ens.device.upper()}")
+    st.caption("Test skorları için README'deki sonuç tablosuna bakın.")
+    st.header("💡 Örnekler")
+    for label, (a, b) in EXAMPLES.items():
+        if st.button(label, use_container_width=True):
+            st.session_state["a"], st.session_state["b"] = a, b
