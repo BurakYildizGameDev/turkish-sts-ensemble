@@ -34,3 +34,20 @@ EXAMPLES = {
 }
 
 st.set_page_config(page_title="Türkçe Paraphrase Tespiti", page_icon="🔍", layout="wide")
+
+
+@st.cache_resource
+def load_ensemble():
+    return Ensemble(MODEL_PATH)
+
+
+st.title("🔍 Türkçe Paraphrase Tespiti")
+st.caption("MiniLM + Siamese Bi-LSTM + sözcüksel öznitelikler → ağaç tabanlı meta-model")
+
+if not os.path.exists(MODEL_PATH):
+    st.error(f"`{MODEL_PATH}` bulunamadı. `python src/train.py` çalıştırın veya model dosyalarını "
+             f"[Releases]({RELEASES}) sayfasından `models/` klasörüne indirin.")
+    st.stop()
+
+with st.spinner("Modeller yükleniyor..."):
+    ens = load_ensemble()
