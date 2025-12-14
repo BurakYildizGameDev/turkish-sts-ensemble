@@ -67,3 +67,34 @@ with st.sidebar:
 col1, col2 = st.columns(2)
 text_a = col1.text_area("Birinci cümle", key="a", height=120)
 text_b = col2.text_area("İkinci cümle", key="b", height=120)
+
+if st.button("🚀 Analiz et", type="primary", use_container_width=True):
+    if not text_a.strip() or not text_b.strip():
+        st.warning("Lütfen iki cümleyi de girin.")
+        st.stop()
+
+    prob, feats = ens.predict_proba([text_a], [text_b])
+    prob, row = float(prob[0]), feats.iloc[0]
+    is_para = prob >= threshold
+
+    st.divider()
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Sonuç", "✅ Paraphrase" if is_para else "❌ Paraphrase değil")
+    m2.metric("Ensemble olasılığı", f"{prob:.3f}")
+    m3.metric("MiniLM benzerliği", f"{row['minilm_sim']:.3f}")
+
+    left, right = st.columns([1, 1])
+    with left:
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number", value=prob, number={"valueformat": ".3f"},
+            title={"text": "P(paraphrase)"},
+            gauge={"axis": {"range": [0, 1]}, "bar": {"color": "#2e86de"},
+                   "threshold": {"line": {"color": "red", "width": 3}, "value": threshold}},
+        ))
+        fig.update_layout(height=280, margin=dict(l=20, r=20, t=50, b=10))
+        st.plotly_chart(fig, use_container_width=True)
+    with right:
+        st.markdown("#### Öznitelikler")
+        st.table({"Öznitelik": [FEATURE_INFO[c] for c in feats.columns],
+                  "Değer": [f"{row[c]:.3f}" if isinstance(row[c], float) else str(row[c])
+                            for c in feats.columns]})
