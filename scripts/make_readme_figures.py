@@ -23,3 +23,18 @@ def save(fig, name):
     fig.savefig(f"{OUT_DIR}/{name}", dpi=200)
     plt.close(fig)
     print(f"  {OUT_DIR}/{name}")
+
+
+def model_comparison():
+    df = pd.read_csv("results/model_comparison.csv").sort_values("F1")
+    fig, ax = plt.subplots(figsize=(8, 4.2))
+    bars = ax.barh(df["Model"], df["F1"] * 100, color=[COLORS[t] for t in df["Type"]])
+    for b, v in zip(bars, df["F1"] * 100):
+        ax.text(v + 0.4, b.get_y() + b.get_height() / 2, f"{v:.1f}", va="center", fontsize=9)
+    lo = max(0, df["F1"].min() * 100 - 10)
+    ax.set_xlim(lo, 100)
+    ax.set_xlabel("F1 on the held-out test set (%)")
+    ax.set_title("Model comparison — deduplicated data, anchor-grouped split")
+    handles = [plt.Rectangle((0, 0), 1, 1, color=c) for t, c in COLORS.items() if t in set(df["Type"])]
+    ax.legend(handles, [t for t in COLORS if t in set(df["Type"])], loc="lower right", frameon=False)
+    save(fig, "model_comparison.png")
