@@ -38,3 +38,22 @@ def model_comparison():
     handles = [plt.Rectangle((0, 0), 1, 1, color=c) for t, c in COLORS.items() if t in set(df["Type"])]
     ax.legend(handles, [t for t in COLORS if t in set(df["Type"])], loc="lower right", frameon=False)
     save(fig, "model_comparison.png")
+
+
+def leakage():
+    clean = pd.read_csv("results/model_comparison.csv").set_index("Model")["F1"]
+    legacy = pd.read_csv("results/legacy/model_comparison.csv").set_index("Model")["F1"]
+    models = [m for m in clean.sort_values(ascending=False).index if m in legacy.index]
+    fig, ax = plt.subplots(figsize=(8, 4.2))
+    y = range(len(models))
+    ax.barh([i + 0.2 for i in y], [legacy[m] * 100 for m in models], height=0.4, color="#c8d6e5",
+            label="Original protocol (duplicates, random split)")
+    ax.barh([i - 0.2 for i in y], [clean[m] * 100 for m in models], height=0.4, color="#2e86de",
+            label="Fixed protocol (deduplicated, grouped split)")
+    ax.set_yticks(list(y), models)
+    ax.invert_yaxis()
+    ax.set_xlim(max(0, min(clean.min(), legacy.min()) * 100 - 10), 100)
+    ax.set_xlabel("Test F1 (%)")
+    ax.set_title("Original vs. fixed evaluation protocol (different test sets)")
+    ax.legend(loc="lower right", frameon=False, fontsize=8)
+    save(fig, "leakage.png")
