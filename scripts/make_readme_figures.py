@@ -57,3 +57,21 @@ def leakage():
     ax.set_title("Original vs. fixed evaluation protocol (different test sets)")
     ax.legend(loc="lower right", frameon=False, fontsize=8)
     save(fig, "leakage.png")
+
+
+def ablation():
+    df = pd.read_csv("results/ablation.csv")
+    df = df[df["Configuration"] != "All features"].sort_values("Delta_vs_all")
+    fig, ax = plt.subplots(figsize=(8, 4))
+    colors = ["#ee5253" if d < -0.01 else "#8395a7" for d in df["Delta_vs_all"]]
+    bars = ax.barh(df["Configuration"], df["Delta_vs_all"] * 100, color=colors)
+    for b, d in zip(bars, df["Delta_vs_all"] * 100):
+        ax.text(d - 0.2 if d < 0 else d + 0.2, b.get_y() + b.get_height() / 2, f"{d:+.1f}",
+                va="center", ha="right" if d < 0 else "left", fontsize=9)
+    ax.axvline(0, color="black", linewidth=0.8)
+    full = pd.read_csv("results/ablation.csv").iloc[0]["Test_F1"] * 100
+    ax.set_xlabel("Change in test F1 vs. all six features (points)")
+    ax.set_title(f"Feature ablation — XGBoost meta-model (all features: F1 = {full:.1f})")
+    lo = df["Delta_vs_all"].min() * 100
+    ax.set_xlim(lo * 1.25 if lo < 0 else -1, max(1.5, df["Delta_vs_all"].max() * 100 + 1))
+    save(fig, "ablation.png")
