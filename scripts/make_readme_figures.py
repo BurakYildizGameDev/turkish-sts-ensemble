@@ -75,3 +75,25 @@ def ablation():
     lo = df["Delta_vs_all"].min() * 100
     ax.set_xlim(lo * 1.25 if lo < 0 else -1, max(1.5, df["Delta_vs_all"].max() * 100 + 1))
     save(fig, "ablation.png")
+
+
+def bootstrap():
+    df = pd.read_csv("results/bootstrap_ci.csv")
+    df = df[df["Model"] != "MiniLM-L12 (zero-shot)"].sort_values("Diff_vs_MiniLM")
+    d = df["Diff_vs_MiniLM"] * 100
+    err = [d - df["Diff_CI_low"] * 100, df["Diff_CI_high"] * 100 - d]
+    fig, ax = plt.subplots(figsize=(8, 3.6))
+    ax.errorbar(d, df["Model"], xerr=err, fmt="o", color="#2e86de", ecolor="#576574", capsize=4)
+    ax.axvline(0, color="#ee5253", linestyle="--", linewidth=1, label="zero-shot MiniLM")
+    ax.set_xlabel("F1 difference to zero-shot MiniLM (points, 95% cluster-bootstrap CI)")
+    ax.set_title("Does the model beat the transformer it is built on?")
+    ax.legend(loc="lower right", frameon=False)
+    save(fig, "bootstrap_ci.png")
+
+
+if __name__ == "__main__":
+    os.makedirs(OUT_DIR, exist_ok=True)
+    model_comparison()
+    leakage()
+    ablation()
+    bootstrap()
