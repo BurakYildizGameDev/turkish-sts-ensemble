@@ -50,3 +50,13 @@ Three public Hugging Face datasets are merged into **620,089 sentence pairs**. A
 | [figenfikri/stsb_tr](https://huggingface.co/datasets/figenfikri/stsb_tr) | 5,667 | STS score ≥ 3.0 → 1, otherwise 0 |
 
 `scripts/build_dataset.py` downloads the sources and rebuilds the merged CSVs.
+
+<details>
+<summary>Data exploration plots</summary>
+
+| | |
+|---|---|
+| ![class balance](results/figures/data/Class_balance.png) | ![sentence lengths](results/figures/data/sentence_lengths.png) |
+| ![length difference](results/figures/data/length_diff_boxplot.png) | ![word cloud](results/figures/data/wordcloud.png) |
+
+</details>
