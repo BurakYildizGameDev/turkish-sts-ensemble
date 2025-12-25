@@ -38,3 +38,15 @@ On a deduplicated 62K-pair sample with an **anchor-grouped** train/test split, t
 | `jaccard_sim` | Word-set intersection over union |
 | `token_overlap` | Number of shared lower-cased tokens |
 | `levenshtein_dist` | Character-level edit distance |
+
+## Dataset
+
+Three public Hugging Face datasets are merged into **620,089 sentence pairs**. Almost half of them are exact duplicates, mostly because every NLI anchor appears in several triplets. After removing duplicate pairs (in either order) and 62 pairs whose copies carry conflicting labels, **326,279 unique pairs** remain (54.9% positive).
+
+| Source | Unique pairs | Label construction |
+|---|---:|---|
+| [mertcobanov/all-nli-triplets-turkish](https://huggingface.co/datasets/mertcobanov/all-nli-triplets-turkish) | 260,840 | Each triplet becomes (anchor, positive) = 1 and (anchor, negative) = 0 |
+| [dogukanvzr/ml-paraphrase-tr](https://huggingface.co/datasets/dogukanvzr/ml-paraphrase-tr) | 59,772 | Binary labels as provided |
+| [figenfikri/stsb_tr](https://huggingface.co/datasets/figenfikri/stsb_tr) | 5,667 | STS score ≥ 3.0 → 1, otherwise 0 |
+
+`scripts/build_dataset.py` downloads the sources and rebuilds the merged CSVs.
