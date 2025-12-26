@@ -60,3 +60,20 @@ Three public Hugging Face datasets are merged into **620,089 sentence pairs**. A
 | ![length difference](results/figures/data/length_diff_boxplot.png) | ![word cloud](results/figures/data/wordcloud.png) |
 
 </details>
+
+## Evaluation protocol
+
+The first version of this project evaluated on a random split of the raw rows. About 23% of the test pairs were also in the training set, and 63% of the test anchors had been seen in training. The stacking features were computed in-sample as well. The current protocol fixes all of this:
+
+| | Original | Current |
+|---|---|---|
+| Data | raw rows, duplicates included | duplicates and label conflicts removed |
+| Split | random 80/20 | 80/20 **grouped by anchor sentence** |
+| Test pairs also in training | 23.2% | **0%** |
+| Test anchors seen in training (in any role) | 63.1% | 6.1% |
+| `lstm_prob` for training rows | predicted by a model trained on those rows | **out-of-fold** (5 anchor-grouped folds) |
+| TF-IDF vocabulary | fit on train + test | fit on train only |
+| Zero-shot thresholds | tuned on the evaluation data | tuned on the training set |
+| Meta-model for the demo | — | chosen by cross-validation on the training set |
+
+Sample size is 62,000 pairs in both cases: 49.6K for training and 12.4K for testing.
