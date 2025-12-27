@@ -77,3 +77,19 @@ The first version of this project evaluated on a random split of the raw rows. A
 | Meta-model for the demo | — | chosen by cross-validation on the training set |
 
 Sample size is 62,000 pairs in both cases: 49.6K for training and 12.4K for testing.
+
+## Results
+
+### Model comparison (held-out test set, 12,383 pairs)
+
+| Model | Type | Accuracy | Precision | Recall | F1 | AUC |
+|---|---|---:|---:|---:|---:|---:|
+| **LightGBM** | Ensemble | **0.867** | 0.864 | 0.897 | **0.880** | **0.940** |
+| XGBoost | Ensemble | 0.866 | 0.864 | 0.895 | 0.879 | 0.940 |
+| Random Forest | Ensemble | 0.859 | 0.856 | 0.893 | 0.874 | 0.932 |
+| MiniLM-L12 (zero-shot) | Pre-trained | 0.806 | 0.787 | 0.883 | 0.832 | 0.891 |
+| E5-large (zero-shot) | Pre-trained | 0.793 | 0.782 | 0.862 | 0.820 | 0.875 |
+| Bi-LSTM + attention | Deep learning | 0.794 | 0.794 | 0.842 | 0.817 | 0.879 |
+| Score average (MiniLM, TF-IDF, Jaccard) | Simple ensemble | 0.767 | 0.734 | 0.897 | 0.808 | 0.841 |
+| LaBSE (zero-shot) | Pre-trained | 0.665 | 0.639 | 0.888 | 0.743 | 0.763 |
+| LSTM baseline | Deep learning | 0.698 | 0.701 | 0.778 | 0.737 | 0.752 |
