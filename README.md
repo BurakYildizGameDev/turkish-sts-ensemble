@@ -93,3 +93,5 @@ Sample size is 62,000 pairs in both cases: 49.6K for training and 12.4K for test
 | Score average (MiniLM, TF-IDF, Jaccard) | Simple ensemble | 0.767 | 0.734 | 0.897 | 0.808 | 0.841 |
 | LaBSE (zero-shot) | Pre-trained | 0.665 | 0.639 | 0.888 | 0.743 | 0.763 |
 | LSTM baseline | Deep learning | 0.698 | 0.701 | 0.778 | 0.737 | 0.752 |
+
+The larger multilingual encoders do not beat MiniLM zero-shot, which is the only one of the three trained for paraphrase identification. A hand-weighted score average is worse than MiniLM alone. The gain comes from the learned meta-model.
