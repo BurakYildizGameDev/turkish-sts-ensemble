@@ -95,3 +95,9 @@ Sample size is 62,000 pairs in both cases: 49.6K for training and 12.4K for test
 | LSTM baseline | Deep learning | 0.698 | 0.701 | 0.778 | 0.737 | 0.752 |
 
 The larger multilingual encoders do not beat MiniLM zero-shot, which is the only one of the three trained for paraphrase identification. A hand-weighted score average is worse than MiniLM alone. The gain comes from the learned meta-model.
+
+### Did the leakage inflate the original numbers?
+
+No. The same code run with the original protocol (`--protocol legacy`) gives Random Forest F1 = 0.872, which reproduces the 0.871 reported by the first version. The fixed protocol gives 0.874–0.880. The two runs use different test sets, and the deduplicated data has a slightly higher positive rate (54.6% vs 52.2%), which makes F1 a little easier. The comparison therefore shows that the leak did not inflate the scores. It does not show that the fixed protocol is harder.
+
+<p align="center"><img src="results/figures/leakage.png" width="640" alt="Original vs fixed protocol"></p>
