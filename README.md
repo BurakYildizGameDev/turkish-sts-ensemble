@@ -101,3 +101,15 @@ The larger multilingual encoders do not beat MiniLM zero-shot, which is the only
 No. The same code run with the original protocol (`--protocol legacy`) gives Random Forest F1 = 0.872, which reproduces the 0.871 reported by the first version. The fixed protocol gives 0.874–0.880. The two runs use different test sets, and the deduplicated data has a slightly higher positive rate (54.6% vs 52.2%), which makes F1 a little easier. The comparison therefore shows that the leak did not inflate the scores. It does not show that the fixed protocol is harder.
 
 <p align="center"><img src="results/figures/leakage.png" width="640" alt="Original vs fixed protocol"></p>
+
+### Ablation
+
+Each feature is removed in turn. The XGBoost meta-model is retrained on the training split and scored on the test split.
+
+<p align="center"><img src="results/figures/ablation.png" width="640" alt="Ablation study"></p>
+
+- Removing `minilm_sim` costs **−5.3 F1**, and removing `lstm_prob` costs **−3.3**. Both carry signal the other lacks.
+- The four lexical features add about 1.2 points together (MiniLM + LSTM alone: 86.7), and 0.1–0.6 points each.
+- Lexical features alone reach only 72.3.
+
+Train-set cross-validation F1 for every configuration is in [`results/ablation.csv`](results/ablation.csv).
