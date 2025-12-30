@@ -113,3 +113,20 @@ Each feature is removed in turn. The XGBoost meta-model is retrained on the trai
 - Lexical features alone reach only 72.3.
 
 Train-set cross-validation F1 for every configuration is in [`results/ablation.csv`](results/ablation.csv).
+
+### Is the gain over MiniLM real?
+
+Test pairs that share an anchor are not independent, so the bootstrap resamples whole anchor groups (1,000 resamples, 9,545 groups). Each model is compared with MiniLM on the same resamples.
+
+<p align="center"><img src="results/figures/bootstrap_ci.png" width="640" alt="Paired bootstrap vs MiniLM"></p>
+
+| Model | F1 | 95% CI | Δ vs MiniLM | 95% CI of Δ |
+|---|---:|---|---:|---|
+| LightGBM | 0.880 | [0.872, 0.886] | +4.7 | [+4.2, +5.3] |
+| XGBoost | 0.879 | [0.872, 0.886] | +4.7 | [+4.1, +5.2] |
+| Random Forest | 0.873 | [0.866, 0.880] | +4.1 | [+3.5, +4.7] |
+| MiniLM-L12 (zero-shot) | 0.832 | [0.825, 0.840] | — | — |
+| Bi-LSTM + attention | 0.819 | [0.812, 0.826] | −1.3 | [−2.1, −0.6] |
+| Score average | 0.808 | [0.800, 0.815] | −2.5 | [−3.0, −2.0] |
+
+<sub>In this table the Bi-LSTM threshold is tuned on the training set, so its F1 differs slightly from the 0.5-threshold value in the model comparison.</sub>
