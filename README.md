@@ -130,3 +130,15 @@ Test pairs that share an anchor are not independent, so the bootstrap resamples 
 | Score average | 0.808 | [0.800, 0.815] | −2.5 | [−3.0, −2.0] |
 
 <sub>In this table the Bi-LSTM threshold is tuned on the training set, so its F1 differs slightly from the 0.5-threshold value in the model comparison.</sub>
+
+### Inference cost (RTX 5070 Ti Laptop, 1,000 pairs, batch 32)
+
+| Model | Load time | Latency (ms / pair) | Peak VRAM |
+|---|---:|---:|---:|
+| MiniLM-L12 | 4.0 s | 0.82 | 0.48 GB |
+| LaBSE | 4.5 s | 1.80 | 1.82 GB |
+| E5-large | 4.4 s | 6.24 | 2.18 GB |
+| Bi-LSTM + attention | 0.03 s | 0.17 | 0.03 GB |
+| **Full ensemble** (all features + LightGBM) | 3.7 s | **1.49** | 0.49 GB |
+
+The full ensemble is still about 4× faster than E5-large while scoring 6 F1 points higher.
