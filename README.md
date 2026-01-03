@@ -173,3 +173,34 @@ The full ensemble is still about 4× faster than E5-large while scoring 6 F1 poi
 ├── models/                     trained weights (see Releases)
 └── data/                       created by build_dataset.py (git-ignored)
 ```
+
+## Quick start
+
+```bash
+git clone https://github.com/BurakYildizGameDev/turkish-sts-ensemble.git
+cd turkish-sts-ensemble
+pip install -r requirements.txt      # use the CUDA build of torch for GPU training
+
+# 1. build the dataset (~620K pairs, downloads from Hugging Face)
+python scripts/build_dataset.py
+
+# 2. train and evaluate everything (~6 min on an RTX 5070 Ti)
+python src/train.py
+python src/train.py --protocol legacy --out results/legacy    # optional: original protocol
+
+# 3. analyses (CPU only, read results/features.csv)
+python src/bootstrap_ci.py
+python src/ablation.py
+python src/compute_cost.py
+python scripts/make_readme_figures.py
+
+# tests
+pytest
+
+# demo
+streamlit run app/app.py
+```
+
+All commands are run from the repository root. To use the demo without training, download `ensemble.joblib`, `lstm_advanced.pt` and `lstm_baseline.pt` from the [Releases](../../releases) page into `models/`.
+
+---
