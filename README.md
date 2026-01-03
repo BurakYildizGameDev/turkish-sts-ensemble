@@ -149,3 +149,27 @@ The full ensemble is still about 4× faster than E5-large while scoring 6 F1 poi
 - **Domain skew.** About 80% of the pairs come from machine-translated NLI data (SNLI/MultiNLI captions). The model is biased toward short, descriptive sentences and has seen little formal or domain-specific text.
 - **Word order.** Every feature except the Bi-LSTM is order-insensitive. Pairs such as *"Adam köpeği parkta gezdiriyor"* / *"Köpek parkta adamı kovalıyor"* get a high paraphrase probability (0.90).
 - **Single seed and sample.** All numbers come from one 62K sample and one split (seed 42). The bootstrap intervals cover test-set sampling, not training variance.
+
+## Project structure
+
+```
+├── app/app.py                  Streamlit demo (full ensemble)
+├── scripts/
+│   ├── build_dataset.py        download + merge + binarise the datasets
+│   └── make_readme_figures.py  redraw the README figures from result CSVs
+├── src/
+│   ├── sts/                    shared package
+│   │   ├── data.py             loading, deduplication, grouped split, leakage report
+│   │   ├── features.py         the six pair features
+│   │   ├── lstm.py             Siamese LSTM / Bi-LSTM + attention (PyTorch)
+│   │   └── ensemble.py         inference with the trained ensemble
+│   ├── train.py                full pipeline: split → LSTMs → features → baselines → meta-models
+│   ├── bootstrap_ci.py         cluster bootstrap and paired comparison vs MiniLM
+│   ├── ablation.py             feature ablation
+│   ├── compute_cost.py         load time / latency / VRAM benchmark
+│   └── analyze_data.py         EDA plots
+├── tests/                      pytest suite (runs in CI)
+├── results/                    CSVs, figures, results/legacy/ = original protocol
+├── models/                     trained weights (see Releases)
+└── data/                       created by build_dataset.py (git-ignored)
+```
