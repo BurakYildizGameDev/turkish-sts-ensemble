@@ -142,3 +142,10 @@ Test pairs that share an anchor are not independent, so the bootstrap resamples 
 | **Full ensemble** (all features + LightGBM) | 3.7 s | **1.49** | 0.49 GB |
 
 The full ensemble is still about 4× faster than E5-large while scoring 6 F1 points higher.
+
+## Limitations
+
+- **Residual sentence overlap.** No test pair and no test anchor group appears in training. However, 6% of test anchors occur elsewhere in training as the *second* sentence of a pair, and 20% of test pairs share at least one sentence with training. A split over connected sentence components would remove this, but one component covers 42% of the data, so such a split is not practical here.
+- **Domain skew.** About 80% of the pairs come from machine-translated NLI data (SNLI/MultiNLI captions). The model is biased toward short, descriptive sentences and has seen little formal or domain-specific text.
+- **Word order.** Every feature except the Bi-LSTM is order-insensitive. Pairs such as *"Adam köpeği parkta gezdiriyor"* / *"Köpek parkta adamı kovalıyor"* get a high paraphrase probability (0.90).
+- **Single seed and sample.** All numbers come from one 62K sample and one split (seed 42). The bootstrap intervals cover test-set sampling, not training variance.
