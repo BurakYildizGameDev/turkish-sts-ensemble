@@ -8,7 +8,6 @@ Siamese LSTM models in PyTorch.
 Both are trained from scratch on the training split only. A checkpoint stores the
 weights, the vocabulary and the config, so it can be reloaded without the data.
 """
-import copy
 import re
 from collections import Counter
 
@@ -149,7 +148,8 @@ def train_lstm(texts_a, texts_b, y, kind="advanced", val_frac=0.1, groups=None, 
             print(f"    epoch {epoch + 1}: loss={history['loss'][-1]:.4f} "
                   f"val_loss={val_loss:.4f} val_acc={history['val_acc'][-1]:.4f}")
         if val_loss < best_loss:
-            best, best_loss, bad = copy.deepcopy(model.state_dict()), val_loss, 0
+            # keep the best weights on the CPU so checkpoints load on machines without a GPU
+            best, best_loss, bad = {k: v.detach().cpu().clone() for k, v in model.state_dict().items()}, val_loss, 0
         else:
             bad += 1
             if bad >= patience:
@@ -163,7 +163,7 @@ def load(ckpt, device=None):
     """Rebuild (model, vocab, max_len) from a checkpoint dict or a path saved with torch.save."""
     device = device or ("cuda" if torch.cuda.is_available() else "cpu")
     if not isinstance(ckpt, dict):
-        ckpt = torch.load(ckpt, map_location=device, weights_only=False)
+        ckpt = torch.load(ckpt, map_location="cpu", weights_only=False)
     model = SiameseLSTM(**ckpt["config"]).to(device)
     model.load_state_dict(ckpt["state_dict"])
     model.eval()
