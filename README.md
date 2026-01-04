@@ -5,6 +5,7 @@
 ![Task](https://img.shields.io/badge/task-paraphrase%20detection-orange)
 ![Language](https://img.shields.io/badge/language-Turkish-red)
 [![tests](https://github.com/BurakYildizGameDev/turkish-sts-ensemble/actions/workflows/tests.yml/badge.svg)](https://github.com/BurakYildizGameDev/turkish-sts-ensemble/actions/workflows/tests.yml)
+[![Live demo](https://img.shields.io/badge/%F0%9F%A4%97%20Live%20demo-Hugging%20Face-yellow)](https://huggingface.co/spaces/BurakshDev/turkish-paraphrase-detection)
 
 Decides whether two **Turkish** sentences mean the same thing. A multilingual transformer (MiniLM), a Siamese Bi-LSTM and four lexical similarity features are stacked into a tree ensemble (Random Forest / XGBoost / LightGBM).
 
@@ -13,6 +14,8 @@ On a deduplicated 62K-pair sample with an **anchor-grouped** train/test split, t
 <p align="center">
   <img src="results/figures/model_comparison.png" width="780" alt="F1 comparison of all models">
 </p>
+
+**▶ Try it: [live demo on Hugging Face](https://huggingface.co/spaces/BurakshDev/turkish-paraphrase-detection)**. It runs entirely in the browser, and the sentences never leave your device.
 
 **Contents:** [How it works](#how-it-works) · [Dataset](#dataset) · [Evaluation protocol](#evaluation-protocol) · [Results](#results) · [Limitations](#limitations) · [Project structure](#project-structure) · [Quick start](#quick-start) · [References](#references) · [Türkçe özet](#türkçe-özet)
 
@@ -235,6 +238,15 @@ Test pairs that share an anchor are not independent, so the bootstrap resamples 
 
 <sub>In this table the Bi-LSTM threshold is tuned on the training set, so its F1 differs slightly from the 0.5-threshold value in the model comparison.</sub>
 
+### In-browser demo
+
+The [Hugging Face Space](https://huggingface.co/spaces/BurakshDev/turkish-paraphrase-detection) is a static page with no server:
+
+- **MiniLM** runs through [transformers.js](https://github.com/huggingface/transformers.js), using the 8-bit ONNX export `Xenova/paraphrase-multilingual-MiniLM-L12-v2`.
+- **Everything else** is re-implemented in [`web/sts.js`](web/sts.js), with the weights exported by `scripts/export_web.py`: the Bi-LSTM forward pass, TF-IDF, the lexical features and the LightGBM trees.
+
+On 303 test pairs, the JavaScript features match Python to within 2·10⁻⁷ when given the same MiniLM similarity. With the 8-bit MiniLM, 301 of the 303 decisions agree (99.3%). Both disagreements had a Python probability within 0.07 of the 0.5 threshold. The first visit downloads about 130 MB, which the browser caches. After that, one pair takes about 20 ms.
+
 ### Inference cost (RTX 5070 Ti Laptop, 1,000 pairs, batch 32)
 
 | Model | Load time | Latency (ms / pair) | Peak VRAM |
@@ -260,9 +272,11 @@ The full ensemble is still about 4× faster than E5-large while scoring 6 F1 poi
 
 ```
 ├── app/app.py                  Streamlit demo (full ensemble)
+├── web/                        in-browser demo (Hugging Face Space): transformers.js + JS port of the ensemble
 ├── scripts/
 │   ├── build_dataset.py        download + merge + binarise the datasets
 │   ├── dataset_stats.py        per-source dataset statistics
+│   ├── export_web.py           export LSTM / TF-IDF / LightGBM weights for web/
 │   └── make_readme_figures.py  redraw the README figures from result CSVs
 ├── src/
 │   ├── sts/                    shared package
@@ -309,9 +323,13 @@ pytest
 
 # demo
 streamlit run app/app.py
+
+# in-browser demo
+python scripts/export_web.py
+python -m http.server -d web 8000     # open http://localhost:8000
 ```
 
-All commands are run from the repository root. To use the demo without training, download `ensemble.joblib`, `lstm_advanced.pt` and `lstm_baseline.pt` from the [Releases](../../releases) page into `models/`.
+All commands are run from the repository root. To use the demo without training, download `ensemble.joblib`, `lstm_advanced.pt` and `lstm_baseline.pt` from the [Releases](../../releases) page into `models/`. `app/app.py` downloads them from the release automatically when they are missing.
 
 ## References
 
