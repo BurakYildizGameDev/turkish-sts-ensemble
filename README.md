@@ -14,6 +14,8 @@ On a deduplicated 62K-pair sample with an **anchor-grouped** train/test split, t
   <img src="results/figures/model_comparison.png" width="780" alt="F1 comparison of all models">
 </p>
 
+**Contents:** [How it works](#how-it-works) · [Dataset](#dataset) · [Evaluation protocol](#evaluation-protocol) · [Results](#results) · [Limitations](#limitations) · [Project structure](#project-structure) · [Quick start](#quick-start) · [References](#references) · [Türkçe özet](#türkçe-özet)
+
 ---
 
 ## How it works
