@@ -183,6 +183,21 @@ Sample size is 62,000 pairs in both cases: 49.6K for training and 12.4K for test
 
 The larger multilingual encoders do not beat MiniLM zero-shot, which is the only one of the three trained for paraphrase identification. A hand-weighted score average is worse than MiniLM alone. The gain comes from the learned meta-model.
 
+### Per-source results
+
+The same test set, split by the source of each pair (`python src/per_source.py`, [`results/per_source.csv`](results/per_source.csv)):
+
+| Source | Test pairs | Positive | MiniLM F1 | Ensemble F1 | Δ | Ensemble AUC |
+|---|---:|---:|---:|---:|---:|---:|
+| NLI triplets | 9,833 | 49.8% | 0.786 | **0.848** | **+6.2** | 0.922 |
+| ML paraphrase | 2,325 | 75.0% | 0.972 | 0.977 | +0.5 | 0.989 |
+| STS-B (tr) | 225 | 53.8% | **0.816** | 0.793 | −2.4 | 0.848 |
+| All | 12,383 | 54.6% | 0.832 | 0.880 | +4.7 | 0.940 |
+
+- **NLI is where the ensemble earns its keep.** Contradictions that reuse the anchor's words fool a single similarity score. The Bi-LSTM, trained on this kind of pair, learns to catch them.
+- **ML paraphrase is nearly solved** by any semantic model, because its negatives are random, unrelated sentences.
+- **STS-B is the weak spot.** The meta-model is fit mostly on NLI pairs and does not transfer to graded, news- and forum-style similarity, where MiniLM alone is better. With only 225 test pairs this difference is not reliable, but it is a clear hint that the model is tuned to the dominant source.
+
 ### Did the leakage inflate the original numbers?
 
 No. The same code run with the original protocol (`--protocol legacy`) gives Random Forest F1 = 0.872, which reproduces the 0.871 reported by the first version. The fixed protocol gives 0.874–0.880. The two runs use different test sets, and the deduplicated data has a slightly higher positive rate (54.6% vs 52.2%), which makes F1 a little easier. The comparison therefore shows that the leak did not inflate the scores. It does not show that the fixed protocol is harder.
@@ -295,6 +310,24 @@ streamlit run app/app.py
 ```
 
 All commands are run from the repository root. To use the demo without training, download `ensemble.joblib`, `lstm_advanced.pt` and `lstm_baseline.pt` from the [Releases](../../releases) page into `models/`.
+
+## References
+
+**Datasets**
+
+- Cobanov, M. (2024). *all-nli-triplets-turkish*. Hugging Face. https://huggingface.co/datasets/mertcobanov/all-nli-triplets-turkish
+- Veziroğlu, D. (2025). *Turkish ML Paraphrase Dataset (60K)*. Hugging Face. https://huggingface.co/datasets/dogukanvzr/ml-paraphrase-tr
+- Beken Fikri, F., Oflazer, K., & Yanıkoğlu, B. (2021). Semantic Similarity Based Evaluation for Abstractive News Summarization. *Proceedings of the 1st Workshop on Natural Language Generation, Evaluation, and Metrics (GEM 2021)*. (STSb-TR)
+- Bowman, S. R., Angeli, G., Potts, C., & Manning, C. D. (2015). A large annotated corpus for learning natural language inference. *EMNLP 2015*. (SNLI)
+- Williams, A., Nangia, N., & Bowman, S. R. (2018). A Broad-Coverage Challenge Corpus for Sentence Understanding through Inference. *NAACL-HLT 2018*. (MultiNLI)
+- Cer, D., Diab, M., Agirre, E., Lopez-Gazpio, I., & Specia, L. (2017). SemEval-2017 Task 1: Semantic Textual Similarity Multilingual and Crosslingual Focused Evaluation. *SemEval-2017*. (STS Benchmark)
+
+**Models**
+
+- Reimers, N., & Gurevych, I. (2019). Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks. *EMNLP-IJCNLP 2019*.
+- Reimers, N., & Gurevych, I. (2020). Making Monolingual Sentence Embeddings Multilingual using Knowledge Distillation. *EMNLP 2020*. (`paraphrase-multilingual-MiniLM-L12-v2`)
+- Feng, F., Yang, Y., Cer, D., Arivazhagan, N., & Wang, W. (2022). Language-agnostic BERT Sentence Embedding. *ACL 2022*. (LaBSE)
+- Wang, L., Yang, N., Huang, X., Yang, L., Majumder, R., & Wei, F. (2024). Multilingual E5 Text Embeddings: A Technical Report. *arXiv:2402.05672*. (`multilingual-e5-large`)
 
 ---
 
