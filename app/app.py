@@ -61,14 +61,14 @@ with st.sidebar:
     st.caption("Test skorları için README'deki sonuç tablosuna bakın.")
     st.header("💡 Örnekler")
     for label, (a, b) in EXAMPLES.items():
-        if st.button(label, use_container_width=True):
+        if st.button(label, width="stretch"):
             st.session_state["a"], st.session_state["b"] = a, b
 
 col1, col2 = st.columns(2)
 text_a = col1.text_area("Birinci cümle", key="a", height=120)
 text_b = col2.text_area("İkinci cümle", key="b", height=120)
 
-if st.button("🚀 Analiz et", type="primary", use_container_width=True):
+if st.button("🚀 Analiz et", type="primary", width="stretch"):
     if not text_a.strip() or not text_b.strip():
         st.warning("Lütfen iki cümleyi de girin.")
         st.stop()
@@ -92,7 +92,7 @@ if st.button("🚀 Analiz et", type="primary", use_container_width=True):
                    "threshold": {"line": {"color": "red", "width": 3}, "value": threshold}},
         ))
         fig.update_layout(height=280, margin=dict(l=20, r=20, t=50, b=10))
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with right:
         st.markdown("#### Öznitelikler")
         st.table({"Öznitelik": [FEATURE_INFO[c] for c in feats.columns],
