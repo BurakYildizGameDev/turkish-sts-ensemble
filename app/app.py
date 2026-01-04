@@ -1,13 +1,15 @@
 """
 Streamlit demo of the trained ensemble.
 
-Needs models/ensemble.joblib and models/lstm_advanced.pt: run `python src/train.py`,
-or download them from the GitHub release into models/.
+Uses models/ensemble.joblib and models/lstm_advanced.pt from `python src/train.py`.
+If they are missing, they are downloaded from the GitHub release (this is how the
+hosted demo on Streamlit Community Cloud gets them).
 
 Usage (from the repository root):  streamlit run app/app.py
 """
 import os
 import sys
+import urllib.request
 
 import plotly.graph_objects as go
 import streamlit as st
@@ -16,7 +18,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 from sts.ensemble import Ensemble  # noqa: E402
 
 MODEL_PATH = "models/ensemble.joblib"
+MODEL_FILES = ["ensemble.joblib", "lstm_advanced.pt"]
 RELEASES = "https://github.com/BurakYildizGameDev/turkish-sts-ensemble/releases"
+DOWNLOAD_URL = RELEASES + "/download/v2.0/{}"
 
 FEATURE_INFO = {
     "minilm_sim": "MiniLM kosinüs benzerliği",
@@ -36,21 +40,31 @@ EXAMPLES = {
 st.set_page_config(page_title="Türkçe Paraphrase Tespiti", page_icon="🔍", layout="wide")
 
 
+def download_models():
+    os.makedirs("models", exist_ok=True)
+    for name in MODEL_FILES:
+        path = os.path.join("models", name)
+        if not os.path.exists(path):
+            urllib.request.urlretrieve(DOWNLOAD_URL.format(name), path + ".part")
+            os.replace(path + ".part", path)
+
+
 @st.cache_resource
 def load_ensemble():
+    download_models()
     return Ensemble(MODEL_PATH)
 
 
 st.title("🔍 Türkçe Paraphrase Tespiti")
 st.caption("MiniLM + Siamese Bi-LSTM + sözcüksel öznitelikler → ağaç tabanlı meta-model")
 
-if not os.path.exists(MODEL_PATH):
-    st.error(f"`{MODEL_PATH}` bulunamadı. `python src/train.py` çalıştırın veya model dosyalarını "
+try:
+    with st.spinner("Modeller yükleniyor (ilk açılışta bir dakika sürebilir)..."):
+        ens = load_ensemble()
+except OSError as e:
+    st.error(f"Model dosyaları yüklenemedi ({e}). `python src/train.py` çalıştırın veya dosyaları "
              f"[Releases]({RELEASES}) sayfasından `models/` klasörüne indirin.")
     st.stop()
-
-with st.spinner("Modeller yükleniyor..."):
-    ens = load_ensemble()
 
 with st.sidebar:
     st.header("⚙️ Ayarlar")
