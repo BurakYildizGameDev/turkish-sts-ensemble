@@ -204,3 +204,13 @@ streamlit run app/app.py
 All commands are run from the repository root. To use the demo without training, download `ensemble.joblib`, `lstm_advanced.pt` and `lstm_baseline.pt` from the [Releases](../../releases) page into `models/`.
 
 ---
+
+## Türkçe özet
+
+Bu proje, iki Türkçe cümlenin aynı anlama gelip gelmediğini tespit eder. MiniLM cümle benzerliği, Siamese Bi-LSTM olasılığı ve dört sözcüksel öznitelik (TF-IDF, Jaccard, ortak kelime sayısı, Levenshtein) birleştirilip Random Forest, XGBoost ve LightGBM ile sınıflandırılır.
+
+Birebir tekrar eden çiftler temizlendi. Aynı anchor cümlesi hem eğitimde hem testte olmayacak şekilde gruplu bölme kullanıldı ve stacking öznitelikleri out-of-fold üretildi. Bu protokolle LightGBM, 62 bin çiftlik örneklemde **F1 = 0,880** elde etmiştir. Zero-shot MiniLM'e göre +4,7 puanlık fark, küme bootstrap'ına göre istatistiksel olarak anlamlıdır. Orijinal (sızıntılı) protokol aynı kodla yeniden çalıştırıldığında da benzer skorlar elde edilmiştir, yani eski sonuçlar sızıntı nedeniyle şişmemiştir.
+
+## License
+
+Code: [MIT](LICENSE). The datasets belong to their respective authors; see the links above for their licenses.
