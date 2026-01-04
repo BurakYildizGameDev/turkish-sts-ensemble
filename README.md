@@ -41,15 +41,102 @@ On a deduplicated 62K-pair sample with an **anchor-grouped** train/test split, t
 
 ## Dataset
 
-Three public Hugging Face datasets are merged into **620,089 sentence pairs**. Almost half of them are exact duplicates, mostly because every NLI anchor appears in several triplets. After removing duplicate pairs (in either order) and 62 pairs whose copies carry conflicting labels, **326,279 unique pairs** remain (54.9% positive).
+There is no large, human-labelled Turkish paraphrase corpus. This project therefore merges three public Hugging Face datasets that come from very different places: machine-translated NLI data, a synthetic machine-learning corpus, and the machine-translated STS Benchmark. Each is turned into binary *same meaning / different meaning* pairs.
 
-| Source | Unique pairs | Label construction |
-|---|---:|---|
-| [mertcobanov/all-nli-triplets-turkish](https://huggingface.co/datasets/mertcobanov/all-nli-triplets-turkish) | 260,840 | Each triplet becomes (anchor, positive) = 1 and (anchor, negative) = 0 |
-| [dogukanvzr/ml-paraphrase-tr](https://huggingface.co/datasets/dogukanvzr/ml-paraphrase-tr) | 59,772 | Binary labels as provided |
-| [figenfikri/stsb_tr](https://huggingface.co/datasets/figenfikri/stsb_tr) | 5,667 | STS score ≥ 3.0 → 1, otherwise 0 |
+```
+Hugging Face ──► scripts/build_dataset.py ──► 620,089 pairs ──► sts.data.deduplicate ──► 326,279 unique pairs
+                 (download, label, merge)     (raw, with duplicates)  (drop duplicates + 62 conflicts)
+                                                                               │
+                                                  random sample of 62,000 ◄────┘
+                                                               │
+                                     anchor-grouped 80/20 split: 49,617 train / 12,383 test
+```
 
-`scripts/build_dataset.py` downloads the sources and rebuilds the merged CSVs.
+### Sources
+
+#### 1. `mertcobanov/all-nli-triplets-turkish` — translated NLI triplets
+
+| | |
+|---|---|
+| Link | https://huggingface.co/datasets/mertcobanov/all-nli-triplets-turkish |
+| Origin | Turkish machine translation of [`sentence-transformers/all-nli`](https://huggingface.co/datasets/sentence-transformers/all-nli), which combines **SNLI** (Bowman et al., 2015) and **MultiNLI** (Williams et al., 2018) |
+| Translation | "A state-of-the-art machine translation model" (the dataset card does not name it), with quality checks for semantic consistency. The English originals are kept in separate columns. |
+| Size | 277,386 train / 6,584 dev / 6,609 test triplets. **Only the train split is used.** |
+| Columns | `anchor`, `positive`, `negative` and their `*_translated` counterparts |
+| License | Follows the terms of `sentence-transformers/all-nli`: SNLI is CC BY-SA 4.0, and MultiNLI has per-genre licenses (see its data description). |
+| Label rule | (anchor, positive) → 1 and (anchor, negative) → 0, using the Turkish columns |
+
+Each triplet is a premise (`anchor`), a hypothesis the premise **entails** (`positive`), and a hypothesis it **contradicts** (`negative`). SNLI premises are Flickr30k image captions. MultiNLI premises come from written and spoken genres such as fiction, government reports, travel guides and telephone conversations.
+
+This source is by far the largest, but it is not true paraphrase data. An entailed hypothesis is usually a shorter, more general restatement: on average the anchor has 10.4 words and the hypothesis 5.8. "Kostümlü insanlar sokakta yürüyor" entails "İnsanlar dışarıdalar", but the two sentences do not mean exactly the same thing. The negatives are contradictions that often share most of their words with the anchor, which makes this the hardest source.
+
+Each anchor appears in about three triplets, so the same (anchor, positive) pair occurs several times. **52.9% of the rows from this source are exact duplicates.** This is the main reason for the deduplication and the anchor-grouped split.
+
+#### 2. `dogukanvzr/ml-paraphrase-tr` — machine-learning paraphrases
+
+| | |
+|---|---|
+| Link | https://huggingface.co/datasets/dogukanvzr/ml-paraphrase-tr |
+| Origin | Turkish sentences about machine-learning education topics: neural networks, deep learning, clustering, NLP and similar (Veziroğlu, 2025) |
+| Construction | The card does not document how the positive pairs were produced. **Negatives were created by random mismatching**, i.e. two unrelated sentences from the corpus. |
+| Size | 60,000 pairs: 45,000 positive (75%) and 15,000 negative |
+| Columns | `sentence1`, `sentence2`, `label` |
+| License | Apache 2.0 |
+| Label rule | Labels used as provided |
+
+The sentences are long (≈12.5 words) and technical. Because the negatives are random pairs of unrelated sentences, they are easy to reject: even zero-shot MiniLM reaches 0.97 F1 on this source (see [Per-source results](#per-source-results)). A handful of pairs (≈0.2%) have an English sentence on one side.
+
+#### 3. `figenfikri/stsb_tr` — Turkish STS Benchmark
+
+| | |
+|---|---|
+| Link | https://huggingface.co/datasets/figenfikri/stsb_tr |
+| Origin | Turkish translation of the **STS Benchmark** (Cer et al., 2017), produced with the Google Cloud Translation API by Beken Fikri, Oflazer and Yanıkoğlu (GEM 2021) |
+| Size | 5,749 train / 1,500 validation / 1,379 test pairs. **Only the train split is used.** |
+| Columns | `sentence1`, `sentence2`, `score` (0–5), `genre` (news, captions, forums), `dataset`, `year`, `sid` |
+| License | Not stated on the dataset card. The English STS Benchmark is distributed for research use. |
+| Label rule | score ≥ 3.0 → 1, otherwise 0. The median score is exactly 3.0, which gives 52% positives. |
+
+STS-B is the only source with **graded human similarity judgements**. A score of 3 means "roughly equivalent, but some important information differs". The binary threshold therefore sits on a fuzzy boundary, and pairs just above and below it are hard even for people. `scripts/build_dataset.py` keeps the original score in the `original_score` column, and `data/processed/semantic_dataset.csv` keeps the 0–5 scores unbinarised.
+
+#### Considered but not used
+
+[`nezahatkorkmaz/turkce-embedding-sts-degerlendirme`](https://huggingface.co/datasets/nezahatkorkmaz/turkce-embedding-sts-degerlendirme) (Apache 2.0) contains 200 text pairs with 0–1 similarity scores, generated with the `suayptalha/Sungur-9B` language model. The first version of the project used it for manual spot checks. It is not part of the training or test data, because it is small, synthetic and continuously scored.
+
+### Statistics
+
+Numbers after deduplication, from [`results/dataset_stats.csv`](results/dataset_stats.csv) (`python scripts/dataset_stats.py`):
+
+| Source | Raw pairs | Unique pairs | Duplicates | Positive | Unique anchors | Words (A / B) | Chars / sentence |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| NLI triplets | 554,340 | 260,840 | 52.9% | 50.4% | 93,810 | 10.4 / 5.8 | 54 |
+| ML paraphrase | 60,000 | 59,772 | 0.4% | 74.9% | 40,064 | 12.7 / 12.3 | 104 |
+| STS-B (tr) | 5,749 | 5,667 | 1.4% | 52.1% | 5,372 | 8.3 / 8.3 | 61 |
+| **Total** | **620,089** | **326,279** | **47.4%** | **54.9%** | **139,142** | 10.8 / 7.1 | 63 |
+
+<sub>Raw pairs exclude 432 rows with an empty sentence. Duplicates are matched after lower-casing and whitespace normalisation, in either sentence order.</sub>
+
+### Examples
+
+| Source | Sentence A | Sentence B | Label |
+|---|---|---|:---:|
+| NLI | Bir grup insan maraton koşuyor. | İnsanlar koşuyor. | 1 |
+| NLI | Bir kadın penceresinin dışındaki bir ipte çorap asıyor. | Çorap asan bir kadın. | 1 |
+| NLI | Bir duvar ustası beton düzleştiriyor. | Bir duvar ustası betona delik açıyor. | 0 |
+| NLI | İki adam kaykay sürüyor ve bunlardan biri bir zıplama numarası yapıyor. | İki adam odalarında takılıyor. | 0 |
+| ML | MSE, bir tahmin modelinin doğruluğunu ölçmek için kullanılan önemli bir metriktir. | MSE, tahmin modelinin ne kadar doğru olduğunu belirlemek için kullanılır. | 1 |
+| ML | Bu algoritma, ağırlıkların hata sinyalini azaltmak için iteratif bir şekilde ayarlanır. | Tıp, finans ve ulaşım gibi farklı sektörlerde yapay zeka uygulanmaktadır. | 0 |
+| STS-B | Bir adam bıçak kullanarak hızla mantar kesiyor. | Bir kişi mantarları bıçakla hızla kesiyor. | 1 (3.75) |
+| STS-B | Bir defne tayı, annesinin yanında çimenli bir alanda yürüyor. | Daha büyük bir atın yanında yürüyen genç atın yakından görünümü. | 0 (2.6) |
+| STS-B | Bir kadın brokoli pişiriyor. | Bir adam yemeğini yiyor. | 0 (0.5) |
+
+### Preprocessing
+
+1. **Download and label.** `scripts/build_dataset.py` pulls the three train splits from Hugging Face, applies the label rules above, and writes `data/processed/semantic_dataset_binary.csv`. Each row has `text_a`, `text_b`, `label_value`, `source` and `original_score`.
+2. **Clean.** `sts.data.load_pairs` drops rows with an empty sentence. The text itself is not modified: no stemming, stop-word removal or diacritic folding.
+3. **Deduplicate.** `sts.data.deduplicate` builds an order-independent key from the lower-cased, whitespace-normalised pair. It drops every copy after the first, and removes pairs whose copies disagree on the label (62 pairs).
+4. **Sample.** A random 62,000-pair sample (seed 42) keeps training time to a few minutes on a laptop GPU.
+5. **Split.** `GroupShuffleSplit` groups pairs by their normalised anchor sentence (`text_a`), so an anchor and all its hypotheses land on the same side.
 
 <details>
 <summary>Data exploration plots</summary>
@@ -146,7 +233,9 @@ The full ensemble is still about 4× faster than E5-large while scoring 6 F1 poi
 ## Limitations
 
 - **Residual sentence overlap.** No test pair and no test anchor group appears in training. However, 6% of test anchors occur elsewhere in training as the *second* sentence of a pair, and 20% of test pairs share at least one sentence with training. A split over connected sentence components would remove this, but one component covers 42% of the data, so such a split is not practical here.
-- **Domain skew.** About 80% of the pairs come from machine-translated NLI data (SNLI/MultiNLI captions). The model is biased toward short, descriptive sentences and has seen little formal or domain-specific text.
+- **Entailment is not paraphrase.** 80% of the pairs come from NLI triplets, where the "positive" sentence is entailed by the anchor rather than equivalent to it. The model therefore learns "B follows from A" more than "A and B say the same thing". The per-source results show it transfers worse to graded STS-B similarity.
+- **Machine translation.** The NLI and STS-B sentences are machine-translated from English and contain translation artefacts. Scores on natural Turkish text may differ.
+- **Easy negatives in ML paraphrase.** Its negatives are random sentence pairs, which inflates the overall F1 a little. The hard cases are in the NLI part.
 - **Word order.** Every feature except the Bi-LSTM is order-insensitive. Pairs such as *"Adam köpeği parkta gezdiriyor"* / *"Köpek parkta adamı kovalıyor"* get a high paraphrase probability (0.90).
 - **Single seed and sample.** All numbers come from one 62K sample and one split (seed 42). The bootstrap intervals cover test-set sampling, not training variance.
 
@@ -156,6 +245,7 @@ The full ensemble is still about 4× faster than E5-large while scoring 6 F1 poi
 ├── app/app.py                  Streamlit demo (full ensemble)
 ├── scripts/
 │   ├── build_dataset.py        download + merge + binarise the datasets
+│   ├── dataset_stats.py        per-source dataset statistics
 │   └── make_readme_figures.py  redraw the README figures from result CSVs
 ├── src/
 │   ├── sts/                    shared package
@@ -166,6 +256,7 @@ The full ensemble is still about 4× faster than E5-large while scoring 6 F1 poi
 │   ├── train.py                full pipeline: split → LSTMs → features → baselines → meta-models
 │   ├── bootstrap_ci.py         cluster bootstrap and paired comparison vs MiniLM
 │   ├── ablation.py             feature ablation
+│   ├── per_source.py           test scores per data source
 │   ├── compute_cost.py         load time / latency / VRAM benchmark
 │   └── analyze_data.py         EDA plots
 ├── tests/                      pytest suite (runs in CI)
@@ -183,6 +274,7 @@ pip install -r requirements.txt      # use the CUDA build of torch for GPU train
 
 # 1. build the dataset (~620K pairs, downloads from Hugging Face)
 python scripts/build_dataset.py
+python scripts/dataset_stats.py                               # optional: per-source statistics
 
 # 2. train and evaluate everything (~6 min on an RTX 5070 Ti)
 python src/train.py
@@ -191,6 +283,7 @@ python src/train.py --protocol legacy --out results/legacy    # optional: origin
 # 3. analyses (CPU only, read results/features.csv)
 python src/bootstrap_ci.py
 python src/ablation.py
+python src/per_source.py
 python src/compute_cost.py
 python scripts/make_readme_figures.py
 
@@ -208,6 +301,13 @@ All commands are run from the repository root. To use the demo without training,
 ## Türkçe özet
 
 Bu proje, iki Türkçe cümlenin aynı anlama gelip gelmediğini tespit eder. MiniLM cümle benzerliği, Siamese Bi-LSTM olasılığı ve dört sözcüksel öznitelik (TF-IDF, Jaccard, ortak kelime sayısı, Levenshtein) birleştirilip Random Forest, XGBoost ve LightGBM ile sınıflandırılır.
+
+Veri, Hugging Face'teki üç açık veri kümesinden oluşturulmuştur:
+- SNLI/MultiNLI'nin makine çevirisi olan **all-nli-triplets-turkish** (öncül, çıkarım, çelişki üçlüleri),
+- makine öğrenmesi konulu cümlelerden oluşan **ml-paraphrase-tr**,
+- STS Benchmark'ın Google Translate ile çevrilmiş hali olan **STSb-TR**.
+
+Birleştirilmiş 620 bin çiftin %47'si birebir tekrardır. Tekrarlar temizlenince 326 bin benzersiz çift kalır.
 
 Birebir tekrar eden çiftler temizlendi. Aynı anchor cümlesi hem eğitimde hem testte olmayacak şekilde gruplu bölme kullanıldı ve stacking öznitelikleri out-of-fold üretildi. Bu protokolle LightGBM, 62 bin çiftlik örneklemde **F1 = 0,880** elde etmiştir. Zero-shot MiniLM'e göre +4,7 puanlık fark, küme bootstrap'ına göre istatistiksel olarak anlamlıdır. Orijinal (sızıntılı) protokol aynı kodla yeniden çalıştırıldığında da benzer skorlar elde edilmiştir, yani eski sonuçlar sızıntı nedeniyle şişmemiştir.
 
