@@ -242,8 +242,10 @@ Test pairs that share an anchor are not independent, so the bootstrap resamples 
 
 The [Hugging Face Space](https://huggingface.co/spaces/BurakshDev/turkish-paraphrase-detection) is a static page with no server:
 
-- **MiniLM** runs through [transformers.js](https://github.com/huggingface/transformers.js), using the 8-bit ONNX export `Xenova/paraphrase-multilingual-MiniLM-L12-v2`.
+- **MiniLM** runs through [transformers.js](https://github.com/huggingface/transformers.js), using the 8-bit ONNX export `Xenova/paraphrase-multilingual-MiniLM-L12-v2`. `scripts/export_web.py` copies that model, transformers.js and the ONNX Runtime WebAssembly files into the Space, so the page does not depend on any CDN or third-party repository.
 - **Everything else** is re-implemented in [`web/sts.js`](web/sts.js), with the weights exported by `scripts/export_web.py`: the Bi-LSTM forward pass, TF-IDF, the lexical features and the LightGBM trees.
+
+- **Explanations:** the page shows how much each feature pushed the decision. These are per-tree path contributions from the LightGBM dump, and they sum exactly to the model output. The page also shows what MiniLM alone would have decided.
 
 On 303 test pairs, the JavaScript features match Python to within 2·10⁻⁷ when given the same MiniLM similarity. With the 8-bit MiniLM, 301 of the 303 decisions agree (99.3%). Both disagreements had a Python probability within 0.07 of the 0.5 threshold. The first visit downloads about 130 MB, which the browser caches. After that, one pair takes about 20 ms.
 
