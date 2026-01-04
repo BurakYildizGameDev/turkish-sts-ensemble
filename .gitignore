@@ -24,3 +24,6 @@ results/legacy/features.csv
 Thumbs.db
 .vscode/
 .idea/
+
+# In-browser demo weights (regenerate with scripts/export_web.py)
+web/model/
