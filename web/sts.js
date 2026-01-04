@@ -179,6 +179,28 @@ export function lightgbmProb(model, x) {
   return sigmoid(raw);
 }
 
+// Per-feature contributions in log-odds (Saabas): every split on the decision path moves
+// the node value; that move is credited to the split feature. bias + sum(contrib) === raw.
+export function lightgbmExplain(model, x) {
+  const contrib = new Array(x.length).fill(0);
+  let bias = 0;
+  for (const tree of model.tree_info) {
+    let node = tree.tree_structure;
+    bias += node.internal_value;
+    while (node.leaf_value === undefined) {
+      const v = x[node.split_feature];
+      const left = Number.isNaN(v) ? node.default_left
+        : node.decision_type === "<=" ? v <= node.threshold : v === node.threshold;
+      const child = left ? node.left_child : node.right_child;
+      const childValue = child.leaf_value ?? child.internal_value;
+      contrib[node.split_feature] += childValue - node.internal_value;
+      node = child;
+    }
+  }
+  const raw = bias + contrib.reduce((s, c) => s + c, 0);
+  return { bias, contrib, raw };
+}
+
 // ---------------------------------------------------------------- full ensemble
 
 export class Ensemble {
@@ -204,6 +226,14 @@ export class Ensemble {
   async predict(a, b) {
     const f = await this.features(a, b);
     const x = this.config.features.map((name) => f[name]);
-    return { prob: lightgbmProb(this.lightgbm, x), features: f };
+    const { bias, contrib } = lightgbmExplain(this.lightgbm, x);
+    const contributions = Object.fromEntries(this.config.features.map((name, i) => [name, contrib[i]]));
+    return {
+      prob: lightgbmProb(this.lightgbm, x),
+      features: f,
+      contributions,
+      bias,
+      minilmParaphrase: f.minilm_sim >= this.config.minilm_threshold,
+    };
   }
 }

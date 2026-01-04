@@ -4,139 +4,185 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Türkçe Paraphrase Tespiti</title>
-  <meta name="description" content="İki Türkçe cümlenin aynı anlama gelip gelmediğini tarayıcıda tahmin eden hibrit ensemble modeli.">
+  <meta name="description" content="İki Türkçe cümlenin aynı anlama gelip gelmediğini tarayıcıda tahmin eden hibrit ensemble modeli: MiniLM + Siamese Bi-LSTM + LightGBM.">
+  <meta property="og:title" content="Turkish Paraphrase Detection — Hybrid Ensemble">
+  <meta property="og:description" content="MiniLM + Siamese Bi-LSTM + lexical features → LightGBM. Test F1 0.880, runs entirely in the browser.">
+  <meta property="og:image" content="https://burakshdev-turkish-paraphrase-detection.static.hf.space/cover.png">
+  <meta property="og:url" content="https://huggingface.co/spaces/BurakshDev/turkish-paraphrase-detection">
+  <meta name="twitter:card" content="summary_large_image">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔍</text></svg>">
-  <style>
-    :root {
-      --bg: #f6f7fb; --card: #ffffff; --text: #1d2433; --muted: #5d6679; --border: #dfe3ec;
-      --accent: #2e6be6; --accent-soft: #e8efff; --good: #148a5b; --good-soft: #e3f6ee;
-      --bad: #c23b3b; --bad-soft: #fbe9e9; --track: #e6e9f0; --on-accent: #ffffff;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #11151d; --card: #1a202b; --text: #e6e9ef; --muted: #9aa3b5; --border: #2c3444;
-        --accent: #6d9bff; --accent-soft: #1f2b45; --good: #45c48c; --good-soft: #17352a;
-        --bad: #ef7a7a; --bad-soft: #3d1f22; --track: #2c3444; --on-accent: #0b1220;
-      }
-    }
-    * { box-sizing: border-box; }
-    body { margin: 0; background: var(--bg); color: var(--text);
-           font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-    main { max-width: 980px; margin: 0 auto; padding: 32px 16px 48px; }
-    h1 { font-size: 1.9rem; margin: 0 0 4px; }
-    .lead { color: var(--muted); margin: 0 0 24px; }
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin-bottom: 16px; }
-    .inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    @media (max-width: 720px) { .inputs { grid-template-columns: 1fr; } }
-    label { display: block; font-weight: 600; margin-bottom: 6px; }
-    textarea { width: 100%; min-height: 110px; resize: vertical; padding: 12px; font: inherit; color: var(--text);
-               background: var(--bg); border: 1px solid var(--border); border-radius: 10px; }
-    textarea:focus, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 14px; }
-    .examples span { color: var(--muted); font-size: .9rem; margin-right: 4px; }
-    button { font: inherit; cursor: pointer; border-radius: 999px; border: 1px solid var(--border);
-             background: var(--card); color: var(--text); padding: 6px 14px; }
-    button:hover { border-color: var(--accent); }
-    button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 600; padding: 10px 26px; }
-    button:disabled { opacity: .55; cursor: wait; }
-    .threshold { margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: .9rem; }
-    .threshold input { accent-color: var(--accent); }
-    .status { color: var(--muted); font-size: .92rem; margin-top: 12px; min-height: 1.4em; }
-    .bar { height: 6px; background: var(--track); border-radius: 99px; overflow: hidden; margin-top: 6px; display: none; }
-    .bar > div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
-    .result { display: none; }
-    .verdict { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: center; }
-    @media (max-width: 720px) { .verdict { grid-template-columns: 1fr; justify-items: center; text-align: center; } }
-    .badge { display: inline-block; padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 1.05rem; }
-    .badge.yes { background: var(--good-soft); color: var(--good); }
-    .badge.no { background: var(--bad-soft); color: var(--bad); }
-    .metrics { display: flex; gap: 28px; flex-wrap: wrap; margin-top: 12px; }
-    .metric b { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
-    .metric small { color: var(--muted); }
-    table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: .95rem; }
-    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--border); }
-    th { color: var(--muted); font-weight: 600; }
-    td.num { text-align: right; font-variant-numeric: tabular-nums; }
-    td .hint { color: var(--muted); font-size: .85rem; }
-    .about { color: var(--muted); font-size: .92rem; }
-    .about a { color: var(--accent); }
-    .about ul { padding-left: 20px; margin: 8px 0; }
-    footer { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 24px; }
-    footer a { color: var(--accent); }
-  </style>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<main>
-  <h1>🔍 Türkçe Paraphrase Tespiti</h1>
-  <p class="lead">İki Türkçe cümle girin; model aynı anlamı taşıyıp taşımadıklarını tahmin etsin.
-    MiniLM + Siamese Bi-LSTM + sözcüksel öznitelikler → LightGBM.</p>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <span class="brand">🔍 <span data-i18n="brand">Türkçe Paraphrase Tespiti</span></span>
+    <div class="toggles">
+      <button class="chip" id="lang" aria-label="Dil / Language">EN</button>
+      <button class="chip" id="theme" aria-label="Tema / Theme">◐</button>
+      <a class="chip" href="https://github.com/BurakYildizGameDev/turkish-sts-ensemble" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+  </div>
+</header>
 
-  <section class="card">
-    <div class="inputs">
-      <div>
-        <label for="a">Birinci cümle</label>
-        <textarea id="a" placeholder="Örnek: Bir grup insan maraton koşuyor."></textarea>
-      </div>
-      <div>
-        <label for="b">İkinci cümle</label>
-        <textarea id="b" placeholder="Örnek: İnsanlar koşuyor."></textarea>
-      </div>
+<main class="wrap">
+  <section class="hero">
+    <h1 data-i18n="title">İki Türkçe cümle aynı şeyi mi söylüyor?</h1>
+    <p class="lead" data-i18n="lead">Bir transformer (MiniLM), sıfırdan eğitilmiş bir Siamese Bi-LSTM ve dört sözcüksel özniteliği LightGBM ile birleştiren hibrit bir model. Tamamen tarayıcınızda çalışır.</p>
+    <div class="stats">
+      <div class="stat"><span class="stat-value" data-i18n="v_f1">0,880</span><span class="stat-label" data-i18n="stat_f1">Test F1 (LightGBM)</span></div>
+      <div class="stat"><span class="stat-value" data-i18n="v_gain">+4,7</span><span class="stat-label" data-i18n="stat_gain">F1 puanı, tek başına MiniLM'e göre</span></div>
+      <div class="stat"><span class="stat-value">326K</span><span class="stat-label" data-i18n="stat_pairs">benzersiz cümle çifti, 3 kaynak</span></div>
     </div>
-    <div class="row examples" id="examples"><span>Örnekler:</span></div>
-    <div class="row">
-      <button class="primary" id="run" disabled>Model yükleniyor…</button>
-      <div class="threshold">
-        <label for="t" style="margin:0;font-weight:400">Karar eşiği</label>
-        <input type="range" id="t" min="0.05" max="0.95" step="0.05" value="0.5">
-        <output id="tv">0.50</output>
-      </div>
-    </div>
-    <div class="status" id="status">Modeller indiriliyor (ilk açılışta ~130 MB, sonra tarayıcı önbelleğinden gelir)…</div>
-    <div class="bar" id="bar"><div></div></div>
   </section>
 
-  <section class="card result" id="result" aria-live="polite">
-    <div class="verdict">
-      <svg id="gauge" viewBox="0 0 200 120" width="220" role="img" aria-label="Paraphrase olasılığı göstergesi">
-        <path d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--track)" stroke-width="16" stroke-linecap="round"/>
-        <path id="arc" d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke="var(--accent)" stroke-width="16"
-              stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
-        <line id="tick" x1="100" y1="12" x2="100" y2="32" stroke="var(--bad)" stroke-width="3"/>
-        <text id="gv" x="100" y="96" text-anchor="middle" font-size="30" font-weight="700" fill="var(--text)">–</text>
-        <text x="100" y="116" text-anchor="middle" font-size="11" fill="var(--muted)">P(paraphrase)</text>
-      </svg>
-      <div>
-        <span class="badge" id="verdict"></span>
-        <div class="metrics">
-          <div class="metric"><b id="m-prob">–</b><small>Ensemble olasılığı</small></div>
-          <div class="metric"><b id="m-minilm">–</b><small>MiniLM benzerliği</small></div>
-          <div class="metric"><b id="m-time">–</b><small>Hesaplama süresi</small></div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="demo" data-i18n="tab_demo">Demo</button>
+    <button role="tab" aria-selected="false" data-tab="results" data-i18n="tab_results">Sonuçlar</button>
+    <button role="tab" aria-selected="false" data-tab="data" data-i18n="tab_data">Veri seti</button>
+    <button role="tab" aria-selected="false" data-tab="how" data-i18n="tab_how">Nasıl çalışır</button>
+  </nav>
+
+  <!-- ============================================================ demo -->
+  <section class="panel" id="panel-demo" role="tabpanel">
+    <div class="card">
+      <div class="inputs">
+        <div>
+          <label for="a" data-i18n="sent_a">Birinci cümle</label>
+          <textarea id="a" data-i18n-placeholder="ph_a" placeholder="Örnek: Bir grup insan maraton koşuyor."></textarea>
+        </div>
+        <div>
+          <label for="b" data-i18n="sent_b">İkinci cümle</label>
+          <textarea id="b" data-i18n-placeholder="ph_b" placeholder="Örnek: İnsanlar koşuyor."></textarea>
+        </div>
+      </div>
+      <div class="examples-title" data-i18n="examples">Örnek dene</div>
+      <div class="examples" id="examples"></div>
+      <div class="actions">
+        <button class="primary" id="run" disabled data-i18n="loading_btn">Model yükleniyor…</button>
+        <div class="threshold">
+          <label for="t" data-i18n="threshold">Karar eşiği</label>
+          <input type="range" id="t" min="0.05" max="0.95" step="0.05" value="0.5">
+          <output id="tv">0.50</output>
+        </div>
+      </div>
+      <div class="loader" id="loader">
+        <div class="status" id="status"></div>
+        <div class="bar"><div id="bar-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="card result" id="result" aria-live="polite" hidden>
+      <div class="verdict-row">
+        <svg class="gauge" viewBox="0 0 200 118" role="img" aria-labelledby="gv">
+          <path d="M20 100 A80 80 0 0 1 180 100" fill="none" class="gauge-track" stroke-width="14" stroke-linecap="round"/>
+          <path id="arc" d="M20 100 A80 80 0 0 1 180 100" fill="none" stroke-width="14" stroke-linecap="round" pathLength="100" stroke-dasharray="0 100"/>
+          <line id="tick" class="gauge-tick" stroke-width="3" stroke-linecap="round"/>
+          <text id="gv" x="100" y="92" text-anchor="middle" class="gauge-value">–</text>
+          <text x="100" y="113" text-anchor="middle" class="gauge-label">P(paraphrase)</text>
+        </svg>
+        <div class="verdict-text">
+          <span class="badge" id="verdict"></span>
+          <p class="verdict-sub" id="verdict-sub"></p>
+          <div class="compare">
+            <div class="compare-item"><span class="compare-k" data-i18n="cmp_ens">Ensemble</span><span id="cmp-ens"></span></div>
+            <div class="compare-item"><span class="compare-k" data-i18n="cmp_minilm">Sadece MiniLM</span><span id="cmp-minilm"></span></div>
+            <div class="compare-item"><span class="compare-k" data-i18n="cmp_time">Süre</span><span id="cmp-time"></span></div>
+          </div>
+        </div>
+      </div>
+      <h3 data-i18n="why">Model neden böyle karar verdi?</h3>
+      <p class="hint" data-i18n="why_hint">Her çubuk, özniteliğin kararı ne kadar ittiğini gösterir (log-odds). Mavi: aynı anlam yönüne, kırmızı: farklı anlam yönüne.</p>
+      <div id="contrib" class="chart"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ results -->
+  <section class="panel" id="panel-results" role="tabpanel" hidden>
+    <div class="card">
+      <h2 data-i18n="r_models">Model karşılaştırması</h2>
+      <p class="hint" data-i18n="r_models_hint">Ayrılmış test kümesi, 12.383 çift. Mavi noktalar ensemble modelleri. Ayrıntı için noktaların üzerine gelin.</p>
+      <div id="chart-models" class="chart"></div>
+      <details><summary data-i18n="show_table">Tabloyu göster</summary><div id="table-models"></div></details>
+    </div>
+    <div class="card">
+      <h2 data-i18n="r_boot">Kazanç gerçek mi?</h2>
+      <p class="hint" data-i18n="r_boot_hint">Her modelin MiniLM'e göre F1 farkı ve %95 güven aralığı (anchor gruplarıyla küme bootstrap, 1000 tekrar). Aralık sıfırı içermiyorsa fark anlamlıdır.</p>
+      <div id="chart-boot" class="chart"></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2 data-i18n="r_source">Kaynağa göre</h2>
+        <p class="hint" data-i18n="r_source_hint">Asıl kazanç NLI verisinde; STS-B'de ensemble geride (yalnızca 225 çift).</p>
+        <div id="table-source"></div>
+      </div>
+      <div class="card">
+        <h2 data-i18n="r_ablation">Ablation</h2>
+        <p class="hint" data-i18n="r_ablation_hint">Bir öznitelik çıkarılınca test F1'deki değişim (puan, XGBoost).</p>
+        <div id="chart-ablation" class="chart"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="r_leak">Sızıntı düzeltmesi</h2>
+      <p class="hint" data-i18n="r_leak_hint">İlk sürüm rastgele bölme kullanıyordu; test çiftlerinin %23'ü eğitimde de vardı. Aynı kod iki protokolle çalıştırıldı.</p>
+      <div id="table-leak"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ data -->
+  <section class="panel" id="panel-data" role="tabpanel" hidden>
+    <div class="card">
+      <h2 data-i18n="d_title">Üç açık veri kümesi</h2>
+      <p class="hint" data-i18n="d_hint">620.089 ham çift; tekrarlar ve çelişkili etiketler temizlenince 326.279 benzersiz çift. 62.000 çiftlik örneklem, anchor cümlesine göre gruplanarak %80/%20 bölündü.</p>
+      <div class="sources" id="sources"></div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="d_stats">İstatistikler</h2>
+      <div id="table-data"></div>
+    </div>
+  </section>
+
+  <!-- ============================================================ how -->
+  <section class="panel" id="panel-how" role="tabpanel" hidden>
+    <div class="card">
+      <h2 data-i18n="h_arch">Mimari</h2>
+      <div class="flow">
+        <div class="flow-col">
+          <div class="node node-in" data-i18n="h_in">Cümle A + Cümle B</div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-col">
+          <div class="node"><b>MiniLM-L12</b><span data-i18n="h_minilm">kosinüs benzerliği (hazır model)</span></div>
+          <div class="node"><b>Siamese Bi-LSTM</b><span data-i18n="h_lstm">+ attention, sıfırdan eğitildi</span></div>
+          <div class="node"><b data-i18n="h_lex_t">Sözcüksel</b><span>TF-IDF · Jaccard · token overlap · Levenshtein</span></div>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-col">
+          <div class="node node-meta"><b>LightGBM</b><span data-i18n="h_meta">6 öznitelik → olasılık</span></div>
         </div>
       </div>
     </div>
-    <table>
-      <thead><tr><th>Öznitelik</th><th class="num">Değer</th></tr></thead>
-      <tbody id="features"></tbody>
-    </table>
-  </section>
-
-  <section class="card about">
-    <strong>Nasıl çalışır?</strong>
-    <ul>
-      <li>Altı öznitelik hesaplanır: MiniLM kosinüs benzerliği, Siamese Bi-LSTM olasılığı, TF-IDF benzerliği,
-        Jaccard benzerliği, ortak kelime sayısı ve Levenshtein mesafesi. LightGBM bunları tek bir olasılığa çevirir.</li>
-      <li>Test kümesinde F1 = <b>0,880</b> (tek başına MiniLM: 0,832). Tekrarları temizlenmiş, anchor cümlesine göre gruplanmış bölme.</li>
-      <li>Her şey <b>tarayıcınızda</b> çalışır; cümleler hiçbir sunucuya gönderilmez. Tarayıcı sürümü sıkıştırılmış (8-bit) MiniLM kullanır;
-        test çiftlerinin %99,3'ünde Python sürümüyle aynı kararı verir.</li>
-      <li>Bilinen zayıflık: kelime sırasını pek dikkate almaz ("Adam köpeği gezdiriyor" / "Köpek adamı kovalıyor" yüksek skor alır).</li>
-    </ul>
-    Kod, veri kaynakları ve değerlendirme: <a href="https://github.com/BurakYildizGameDev/turkish-sts-ensemble" target="_blank" rel="noopener">GitHub</a>
+    <div class="grid2">
+      <div class="card">
+        <h2 data-i18n="h_protocol">Değerlendirme protokolü</h2>
+        <ul class="list" id="list-protocol"></ul>
+      </div>
+      <div class="card">
+        <h2 data-i18n="h_limits">Kısıtlar</h2>
+        <ul class="list" id="list-limits"></ul>
+      </div>
+    </div>
+    <div class="card">
+      <h2 data-i18n="h_browser">Tarayıcıda nasıl çalışıyor?</h2>
+      <p id="browser-text"></p>
+    </div>
   </section>
 
   <footer>
-    <a href="https://github.com/BurakYildizGameDev/turkish-sts-ensemble" target="_blank" rel="noopener">turkish-sts-ensemble</a> · MIT
+    <a href="https://github.com/BurakYildizGameDev/turkish-sts-ensemble" target="_blank" rel="noopener">github.com/BurakYildizGameDev/turkish-sts-ensemble</a> · MIT
   </footer>
 </main>
+<div class="tooltip" id="tooltip" role="tooltip" hidden></div>
 <script type="module" src="app.js"></script>
 </body>
 </html>
