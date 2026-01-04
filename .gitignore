@@ -25,5 +25,8 @@ Thumbs.db
 .vscode/
 .idea/
 
-# In-browser demo weights (regenerate with scripts/export_web.py)
+# In-browser demo build output (regenerate with scripts/export_web.py)
 web/model/
+web/models/
+web/vendor/
+web/data/
